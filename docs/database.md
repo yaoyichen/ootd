@@ -1,7 +1,7 @@
 # 数据库参考文档
 
 **技术栈**：Prisma 7 + SQLite + better-sqlite3 adapter
-**更新日期**：2026-03-14
+**更新日期**：2026-03-14（v2：新增 Outfit 模型）
 
 ---
 
@@ -119,6 +119,23 @@ if (process.env.NODE_ENV !== "production") {
 | isDefault | Boolean | 是 | false | 是否为默认人像（试穿时自动选中） |
 | createdAt | DateTime | 是 | now() | 创建时间 |
 
+### Outfit（穿搭记录）
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| id | String | 是 | cuid() 自动生成 | 主键 |
+| personImageId | String | 是 | — | 关联的人像 ID |
+| topItemId | String? | 否 | — | 关联的上衣 ID |
+| bottomItemId | String? | 否 | — | 关联的下装 ID |
+| resultImagePath | String | 是 | — | 生成结果图片本地路径（如 `/uploads/outfits/xxx.jpg`） |
+| isFavorite | Boolean | 是 | false | 是否被收藏 |
+| createdAt | DateTime | 是 | now() | 创建时间 |
+| updatedAt | DateTime | 是 | 自动更新 | 更新时间 |
+
+**联合唯一索引**：`@@unique([personImageId, topItemId, bottomItemId])`
+
+同一组搭配（人像 + 上衣 + 下装）只会保存一条记录，重新生成时通过 `upsert` 更新 `resultImagePath`。
+
 ---
 
 ## 四、API 路由参考
@@ -194,6 +211,31 @@ if (process.env.NODE_ENV !== "production") {
 ```
 
 该操作会先将所有已有人像的 `isDefault` 置为 `false`，再将目标人像设为 `true`。
+
+### 穿搭记录
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/outfits` | 查询穿搭（支持缓存查询和收藏列表） |
+| PUT | `/api/outfits/[id]` | 更新穿搭（收藏/取消收藏） |
+| DELETE | `/api/outfits/[id]` | 删除穿搭（同时删除结果图片） |
+
+**GET /api/outfits** 查询参数：
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| favorites | string | `?favorites=true` 获取所有收藏穿搭列表 |
+| personImageId | string | 按搭配组合查缓存（必填，与下方参数配合使用） |
+| topItemId | string | 上衣 ID（可选） |
+| bottomItemId | string | 下装 ID（可选） |
+
+**PUT /api/outfits/[id]** 切换收藏状态：
+
+```json
+{ "isFavorite": true }
+```
+
+> 穿搭记录由 `/api/tryon` 在生成成功后自动创建/更新（upsert），无需手动 POST。
 
 ---
 
@@ -297,6 +339,54 @@ const persons = await prisma.personImage.findMany({
 });
 ```
 
+### Upsert（创建或更新）
+
+```typescript
+// 同一搭配组合只保留一条记录，重新生成时更新图片路径
+const outfit = await prisma.outfit.upsert({
+  where: {
+    personImageId_topItemId_bottomItemId: {
+      personImageId: "clxxx",
+      topItemId: "clyyy",
+      bottomItemId: null,
+    },
+  },
+  update: {
+    resultImagePath: "/uploads/outfits/new.jpg",
+    updatedAt: new Date(),
+  },
+  create: {
+    personImageId: "clxxx",
+    topItemId: "clyyy",
+    bottomItemId: null,
+    resultImagePath: "/uploads/outfits/new.jpg",
+  },
+});
+```
+
+### 按联合字段查询缓存
+
+```typescript
+// 查找是否已有相同搭配的生成记录
+const cached = await prisma.outfit.findFirst({
+  where: {
+    personImageId: "clxxx",
+    topItemId: "clyyy",
+    bottomItemId: null,
+  },
+});
+```
+
+### 按条件筛选（收藏列表）
+
+```typescript
+// 获取所有收藏的穿搭，按更新时间倒序
+const favorites = await prisma.outfit.findMany({
+  where: { isFavorite: true },
+  orderBy: { updatedAt: "desc" },
+});
+```
+
 ---
 
 ## 六、常用运维命令
@@ -319,6 +409,7 @@ sqlite3 dev.db
 # 常用 SQLite 查询
 sqlite3 dev.db "SELECT id, name, category FROM Item;"
 sqlite3 dev.db "SELECT id, name, isDefault FROM PersonImage;"
+sqlite3 dev.db "SELECT id, personImageId, topItemId, isFavorite FROM Outfit;"
 sqlite3 dev.db ".tables"     # 列出所有表
 sqlite3 dev.db ".schema"     # 查看建表语句
 ```

@@ -32,3 +32,16 @@ model PersonImage {
   isDefault Boolean  @default(false)
   createdAt DateTime @default(now())
 }
+
+model Outfit {
+  id              String   @id @default(cuid())
+  personImageId   String
+  topItemId       String?
+  bottomItemId    String?
+  resultImagePath String
+  isFavorite      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([personImageId, topItemId, bottomItemId])
+}

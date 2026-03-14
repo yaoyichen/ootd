@@ -19,6 +19,12 @@ interface PersonData {
   isDefault: boolean;
 }
 
+interface OutfitData {
+  id: string;
+  resultImagePath: string;
+  isFavorite: boolean;
+}
+
 const CATEGORY_LABELS: Record<string, string> = {
   TOP: "上衣",
   BOTTOM: "下装",
@@ -161,15 +167,61 @@ export default function TryonPage() {
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [picker, setPicker] = useState<"person" | "top" | "bottom" | null>(null);
+  const [outfitId, setOutfitId] = useState<string | null>(null);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isCached, setIsCached] = useState(false);
 
   useEffect(() => {
     fetch("/api/persons").then((r) => r.json()).then((data) => {
+      if (!Array.isArray(data)) return;
       setPersons(data);
       const def = data.find((p: PersonData) => p.isDefault);
       if (def) setSelectedPerson(def.id);
     });
-    fetch("/api/items").then((r) => r.json()).then(setItems);
+    fetch("/api/items").then((r) => r.json()).then((data) => {
+      if (Array.isArray(data)) setItems(data);
+    });
   }, []);
+
+  const checkCache = useCallback(async (personId: string | null, topId: string | null, bottomId: string | null) => {
+    if (!personId || (!topId && !bottomId)) {
+      setResultImage(null);
+      setOutfitId(null);
+      setIsFavorite(false);
+      setIsCached(false);
+      setStatus("idle");
+      return;
+    }
+
+    try {
+      const params = new URLSearchParams({ personImageId: personId });
+      if (topId) params.set("topItemId", topId);
+      if (bottomId) params.set("bottomItemId", bottomId);
+
+      const res = await fetch(`/api/outfits?${params}`);
+      const data: OutfitData | null = await res.json();
+
+      if (data?.resultImagePath) {
+        setResultImage(data.resultImagePath);
+        setOutfitId(data.id);
+        setIsFavorite(data.isFavorite);
+        setIsCached(true);
+        setStatus("completed");
+      } else {
+        setResultImage(null);
+        setOutfitId(null);
+        setIsFavorite(false);
+        setIsCached(false);
+        setStatus("idle");
+      }
+    } catch {
+      setIsCached(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkCache(selectedPerson, selectedTop, selectedBottom);
+  }, [selectedPerson, selectedTop, selectedBottom, checkCache]);
 
   const getPerson = (id: string | null) => persons.find((p) => p.id === id);
   const getItem = (id: string | null) => items.find((i) => i.id === id);
@@ -187,6 +239,7 @@ export default function TryonPage() {
     setStatus("processing");
     setError(null);
     setResultImage(null);
+    setIsCached(false);
 
     try {
       const res = await fetch("/api/tryon", {
@@ -196,6 +249,9 @@ export default function TryonPage() {
           person_image: person.imagePath,
           top_garment_image: top?.imagePath || null,
           bottom_garment_image: bottom?.imagePath || null,
+          personImageId: person.id,
+          topItemId: top?.id || null,
+          bottomItemId: bottom?.id || null,
         }),
       });
 
@@ -208,6 +264,8 @@ export default function TryonPage() {
       }
 
       setResultImage(data.image_url);
+      setOutfitId(data.outfit_id);
+      setIsFavorite(data.isFavorite ?? false);
       setStatus("completed");
     } catch {
       setStatus("failed");
@@ -216,10 +274,25 @@ export default function TryonPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPerson, selectedTop, selectedBottom, persons, items]);
 
-  const handleReset = () => {
-    setStatus("idle");
-    setResultImage(null);
-    setError(null);
+  const handleToggleFavorite = async () => {
+    if (!outfitId) return;
+    const newVal = !isFavorite;
+    setIsFavorite(newVal);
+
+    try {
+      await fetch(`/api/outfits/${outfitId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isFavorite: newVal }),
+      });
+    } catch {
+      setIsFavorite(!newVal);
+    }
+  };
+
+  const handleRegenerate = () => {
+    setIsCached(false);
+    handleGenerate();
   };
 
   const isProcessing = status === "processing";
@@ -249,7 +322,6 @@ export default function TryonPage() {
         }}
       />
 
-      {/* Picker modals */}
       {picker === "person" && (
         <Picker
           title="选择人像"
@@ -288,7 +360,6 @@ export default function TryonPage() {
       )}
 
       <main className="relative z-10 max-w-6xl mx-auto px-6 pt-8 pb-20">
-        {/* Hero */}
         <div className="text-center mb-10">
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight" style={{ color: "#1D1D1F" }}>
             <span
@@ -308,7 +379,6 @@ export default function TryonPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.1fr] gap-10 items-start">
-          {/* Left: Selection */}
           <div className="flex flex-col gap-6">
             <div className="grid grid-cols-3 gap-3">
               <SelectCard
@@ -334,23 +404,51 @@ export default function TryonPage() {
               />
             </div>
 
-            <button
-              onClick={handleGenerate}
-              disabled={!canGenerate}
-              className="btn-gradient w-full py-4 rounded-full text-sm font-semibold tracking-wide"
-            >
-              {isProcessing ? (
-                <span className="flex items-center justify-center gap-2.5">
-                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" style={{ animation: "spin 1s linear infinite" }}>
-                    <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" strokeWidth="3" fill="none" />
-                    <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round" fill="none" />
-                  </svg>
-                  AI 生成中，通常需要 10-30 秒…
-                </span>
-              ) : (
-                "生成试穿效果"
-              )}
-            </button>
+            {isCached && status === "completed" ? (
+              <div className="flex gap-3">
+                <div
+                  className="flex-1 py-3 rounded-full text-sm font-medium text-center"
+                  style={{
+                    background: "rgba(255,149,0,0.08)",
+                    color: "#FF9500",
+                    border: "1px solid rgba(255,149,0,0.15)",
+                  }}
+                >
+                  已有穿搭记录
+                </div>
+                <button
+                  onClick={handleRegenerate}
+                  disabled={isProcessing}
+                  className="px-6 py-3 rounded-full text-sm font-semibold text-white transition-all"
+                  style={{
+                    background: "linear-gradient(135deg, #FF9500, #FFCC00)",
+                    boxShadow: "0 4px 16px rgba(255,149,0,0.25)",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 24px rgba(255,149,0,0.35)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 16px rgba(255,149,0,0.25)"; }}
+                >
+                  重新生成
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleGenerate}
+                disabled={!canGenerate}
+                className="btn-gradient w-full py-4 rounded-full text-sm font-semibold tracking-wide"
+              >
+                {isProcessing ? (
+                  <span className="flex items-center justify-center gap-2.5">
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" style={{ animation: "spin 1s linear infinite" }}>
+                      <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" strokeWidth="3" fill="none" />
+                      <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round" fill="none" />
+                    </svg>
+                    AI 生成中，通常需要 10-30 秒…
+                  </span>
+                ) : (
+                  "生成试穿效果"
+                )}
+              </button>
+            )}
 
             {error && (
               <div
@@ -384,7 +482,6 @@ export default function TryonPage() {
             )}
           </div>
 
-          {/* Right: Result */}
           <div className="flex flex-col gap-3">
             <span className="text-sm font-semibold" style={{ color: "#1D1D1F" }}>效果预览</span>
             <div
@@ -395,29 +492,57 @@ export default function TryonPage() {
                 <div className="absolute inset-0 animate-fade-in-up">
                   <Image src={resultImage} alt="试穿效果" fill className="object-cover" unoptimized />
                   <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/50 to-transparent" />
-                  <div className="absolute bottom-4 inset-x-4 flex gap-2.5 justify-end">
+
+                  {isCached && (
+                    <div
+                      className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-medium"
+                      style={{ background: "rgba(0,0,0,0.5)", color: "#fff", backdropFilter: "blur(8px)" }}
+                    >
+                      已缓存
+                    </div>
+                  )}
+
+                  <div className="absolute bottom-4 inset-x-4 flex gap-2.5 justify-end items-center">
+                    <button
+                      onClick={handleToggleFavorite}
+                      className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
+                      style={{
+                        background: isFavorite ? "rgba(255,59,48,0.9)" : "rgba(255,255,255,0.2)",
+                        backdropFilter: "blur(12px)",
+                        boxShadow: isFavorite ? "0 4px 12px rgba(255,59,48,0.3)" : "none",
+                      }}
+                      title={isFavorite ? "取消收藏" : "收藏"}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill={isFavorite ? "white" : "none"} stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                      </svg>
+                    </button>
+
                     <a
                       href={resultImage}
                       download="ootd-tryon.png"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-5 py-2 rounded-full text-xs font-semibold text-white"
+                      className="px-5 py-2 rounded-full text-xs font-semibold text-white transition-all"
                       style={{
                         background: "linear-gradient(135deg, #FF9500, #FFCC00)",
                         boxShadow: "0 4px 16px rgba(255,149,0,0.3)",
                       }}
                     >
-                      保存图片
+                      下载图片
                     </a>
-                    <button
-                      onClick={handleReset}
-                      className="px-5 py-2 rounded-full text-xs font-semibold text-white transition-colors"
-                      style={{ background: "rgba(255,255,255,0.2)", backdropFilter: "blur(12px)" }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.3)"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.2)"; }}
-                    >
-                      重新生成
-                    </button>
+
+                    {!isCached && (
+                      <button
+                        onClick={handleRegenerate}
+                        className="px-5 py-2 rounded-full text-xs font-semibold text-white transition-colors"
+                        style={{ background: "rgba(255,255,255,0.2)", backdropFilter: "blur(12px)" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.3)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.2)"; }}
+                      >
+                        重新生成
+                      </button>
+                    )}
                   </div>
                 </div>
               ) : (

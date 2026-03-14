@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "node:fs";
 import path from "node:path";
+import { prisma } from "@/lib/prisma";
 
 const API_KEY = process.env.DASHSCOPE_API_KEY ?? "";
 const MODEL = "qwen-image-2.0-pro";
@@ -35,6 +36,22 @@ function buildPrompt(hasTop: boolean, hasBottom: boolean): string {
   );
 }
 
+async function downloadImage(url: string): Promise<string> {
+  const outDir = path.join(process.cwd(), "public", "uploads", "outfits");
+  if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to download image: ${res.status}`);
+
+  const buffer = Buffer.from(await res.arrayBuffer());
+  const ext = url.includes(".png") ? ".png" : ".jpg";
+  const filename = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}${ext}`;
+  const filePath = path.join(outDir, filename);
+  fs.writeFileSync(filePath, buffer);
+
+  return `/uploads/outfits/${filename}`;
+}
+
 export async function POST(req: NextRequest) {
   if (!API_KEY) {
     return NextResponse.json(
@@ -45,7 +62,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { person_image, top_garment_image, bottom_garment_image } = body;
+    const {
+      person_image,
+      top_garment_image,
+      bottom_garment_image,
+      personImageId,
+      topItemId,
+      bottomItemId,
+    } = body;
 
     if (!person_image) {
       return NextResponse.json(
@@ -114,7 +138,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({ image_url: imageUrl });
+    const localPath = await downloadImage(imageUrl);
+
+    let outfit = null;
+    if (personImageId) {
+      outfit = await prisma.outfit.upsert({
+        where: {
+          personImageId_topItemId_bottomItemId: {
+            personImageId,
+            topItemId: topItemId || null,
+            bottomItemId: bottomItemId || null,
+          },
+        },
+        update: {
+          resultImagePath: localPath,
+          updatedAt: new Date(),
+        },
+        create: {
+          personImageId,
+          topItemId: topItemId || null,
+          bottomItemId: bottomItemId || null,
+          resultImagePath: localPath,
+        },
+      });
+    }
+
+    return NextResponse.json({
+      image_url: localPath,
+      outfit_id: outfit?.id ?? null,
+      isFavorite: outfit?.isFavorite ?? false,
+    });
   } catch (err) {
     console.error("Tryon error:", err);
     return NextResponse.json(
