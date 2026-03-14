@@ -1,9 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
+import fs from "node:fs";
+import path from "node:path";
 
 const API_KEY = process.env.DASHSCOPE_API_KEY ?? "";
 const MODEL = "qwen-image-2.0-pro";
 const API_URL =
   "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation";
+
+function resolveImage(input: string): string {
+  if (input.startsWith("data:") || input.startsWith("http")) return input;
+  const absPath = path.join(process.cwd(), "public", input);
+  if (!fs.existsSync(absPath)) throw new Error(`Image not found: ${input}`);
+  const ext = path.extname(absPath).toLowerCase();
+  const mime = ext === ".png" ? "image/png" : "image/jpeg";
+  const data = fs.readFileSync(absPath).toString("base64");
+  return `data:${mime};base64,${data}`;
+}
 
 const NEGATIVE_PROMPT =
   "面部变化, 五官变形, 姿势改变, 身材变化, 模糊, 低质量, 卡通, AI感, 多余肢体";
@@ -52,10 +64,10 @@ export async function POST(req: NextRequest) {
     const hasBottom = !!bottom_garment_image;
 
     const content: { image?: string; text?: string }[] = [
-      { image: person_image },
+      { image: resolveImage(person_image) },
     ];
-    if (hasTop) content.push({ image: top_garment_image });
-    if (hasBottom) content.push({ image: bottom_garment_image });
+    if (hasTop) content.push({ image: resolveImage(top_garment_image) });
+    if (hasBottom) content.push({ image: resolveImage(bottom_garment_image) });
     content.push({ text: buildPrompt(hasTop, hasBottom) });
 
     const res = await fetch(API_URL, {

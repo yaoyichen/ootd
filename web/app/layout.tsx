@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { NavBar } from "./components/NavBar";
 
 export const metadata: Metadata = {
   title: "OOTD — AI 虚拟试穿",
@@ -13,7 +14,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <NavBar />
+        {children}
+      </body>
     </html>
   );
 }
