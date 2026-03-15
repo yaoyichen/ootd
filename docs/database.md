@@ -1,7 +1,7 @@
 # 数据库参考文档
 
 **技术栈**：Prisma 7 + SQLite + better-sqlite3 adapter
-**更新日期**：2026-03-14（v2：新增 Outfit 模型）
+**更新日期**：2026-03-15（v3：新增 DailyRecommendation 模型 + Outfit 评分字段）
 
 ---
 
@@ -31,7 +31,9 @@ web/
 │       ├── models.ts             # 类型定义
 │       └── ...
 ├── lib/
-│   └── prisma.ts                 # 运行时客户端单例
+│   ├── prisma.ts                 # 运行时客户端单例
+│   ├── qwen.ts                   # DashScope Qwen API 封装（评分 + 搭配推荐）
+│   └── tryon.ts                  # 虚拟试穿生成逻辑（含缓存）
 ├── dev.db                        # SQLite 数据库文件（gitignore）
 └── .gitignore                    # 排除 dev.db、generated/、uploads/
 ```
@@ -73,6 +75,16 @@ if (process.env.NODE_ENV !== "production") {
 ```
 
 > **注意**：`prisma.config.ts` 和 `lib/prisma.ts` 中的数据库路径必须指向同一个文件（`web/dev.db`），否则会出现「数据写入了但读不到」的问题。
+
+**`lib/qwen.ts`** — DashScope Qwen API 封装，包含两个核心函数：
+
+- `scoreOutfit(imagePath)` — 调用 Qwen-VL-Max 对穿搭效果图进行五维评分，返回 `{ score, dims, evaluation }`
+- `suggestCombinations(items)` — 调用 Qwen-Max 根据衣橱单品列表推荐 5 组最佳搭配
+
+**`lib/tryon.ts`** — 虚拟试穿生成逻辑：
+
+- `generateTryon(input)` — 调用 DashScope qwen-image-2.0-pro 生成试穿图。内置缓存机制，同一搭配组合（人像 + 上衣 + 下装）不重复生成
+- `resolveImage(input)` — 将本地图片路径转换为 Base64 Data URL
 
 ---
 
@@ -129,12 +141,53 @@ if (process.env.NODE_ENV !== "production") {
 | bottomItemId | String? | 否 | — | 关联的下装 ID |
 | resultImagePath | String | 是 | — | 生成结果图片本地路径（如 `/uploads/outfits/xxx.jpg`） |
 | isFavorite | Boolean | 是 | false | 是否被收藏 |
+| score | Float? | 否 | — | AI 综合评分（五维均值，0–100） |
+| scoreDims | String? | 否 | — | 五维评分 JSON（见下方说明） |
+| evaluation | String? | 否 | — | AI 搭配评语（2–3 句） |
+| scoredAt | DateTime? | 否 | — | 最近一次评分时间 |
 | createdAt | DateTime | 是 | now() | 创建时间 |
 | updatedAt | DateTime | 是 | 自动更新 | 更新时间 |
 
 **联合唯一索引**：`@@unique([personImageId, topItemId, bottomItemId])`
 
 同一组搭配（人像 + 上衣 + 下装）只会保存一条记录，重新生成时通过 `upsert` 更新 `resultImagePath`。
+
+**scoreDims 字段格式**：
+
+JSON 字符串，包含五个评分维度（每项 1–100 分）：
+
+```json
+{
+  "colorHarmony": 82,
+  "styleCohesion": 76,
+  "trendiness": 71,
+  "practicality": 88,
+  "creativity": 65
+}
+```
+
+| 键 | 含义 |
+|----|------|
+| colorHarmony | 色彩和谐 |
+| styleCohesion | 风格统一 |
+| trendiness | 时尚度 |
+| practicality | 实穿性 |
+| creativity | 创意度 |
+
+### DailyRecommendation（每日推荐）
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| id | String | 是 | cuid() 自动生成 | 主键 |
+| date | String | 是 | — | 推荐日期，格式 `YYYY-MM-DD` |
+| rank | Int | 是 | — | 排名（1, 2, 3） |
+| outfitId | String | 是 | — | 关联的 Outfit ID |
+| reason | String? | 否 | — | LLM 给出的推荐搭配理由 |
+| createdAt | DateTime | 是 | now() | 创建时间 |
+
+**联合唯一索引**：`@@unique([date, rank])`
+
+每天保存 Top 3 推荐记录。重新生成推荐时，先删除当天已有记录再写入新数据。
 
 ---
 
@@ -236,6 +289,93 @@ if (process.env.NODE_ENV !== "production") {
 ```
 
 > 穿搭记录由 `/api/tryon` 在生成成功后自动创建/更新（upsert），无需手动 POST。
+
+### AI 评分
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/outfits/[id]/evaluate` | 对单套穿搭进行 AI 五维评分 |
+
+无请求体。返回：
+
+```json
+{
+  "score": 78,
+  "scoreDims": {
+    "colorHarmony": 82,
+    "styleCohesion": 76,
+    "trendiness": 71,
+    "practicality": 88,
+    "creativity": 65
+  },
+  "evaluation": "搭配评语..."
+}
+```
+
+> 评分结果会同步写入 Outfit 表的 `score`、`scoreDims`、`evaluation`、`scoredAt` 字段。已有评分的穿搭再次调用会覆盖旧分数。
+
+### 每日推荐
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/recommendations` | 获取指定日期的推荐列表 |
+| POST | `/api/recommendations/generate` | 生成每日推荐（SSE 流式响应） |
+| POST | `/api/recommendations/rescore` | 仅重新打分（复用已有穿搭图像） |
+
+**GET /api/recommendations** 查询参数：
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| date | string | 日期，格式 `YYYY-MM-DD`，默认今天 |
+
+返回：
+
+```json
+{
+  "date": "2026-03-15",
+  "recommendations": [
+    {
+      "rank": 1,
+      "outfitId": "clxxx",
+      "imagePath": "/uploads/outfits/xxx.jpg",
+      "score": 85,
+      "scoreDims": { "colorHarmony": 89, "styleCohesion": 92, "..." : "..." },
+      "evaluation": "搭配评语...",
+      "reason": "LLM 推荐理由...",
+      "topItem": { "id": "...", "name": "...", "imagePath": "...", "category": "TOP" },
+      "bottomItem": { "id": "...", "name": "...", "imagePath": "...", "category": "BOTTOM" }
+    }
+  ]
+}
+```
+
+**POST /api/recommendations/generate** 请求体：
+
+```json
+{ "personImageId": "clxxx" }
+```
+
+响应为 SSE（`text/event-stream`），事件类型：
+
+| 事件 | 说明 |
+|------|------|
+| `progress` | 各步骤进度（matching / matched / generating / generated / scoring / scored） |
+| `complete` | 推荐生成完成，携带 `{ date, recommendations }` |
+| `error` | 生成失败，携带 `{ message }` |
+
+**POST /api/recommendations/rescore** 请求体：
+
+```json
+{ "date": "2026-03-15" }
+```
+
+复用已有穿搭图像，仅重新调用 AI 评分并更新排名。返回格式与 GET 相同。
+
+### 试穿状态
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/tryon-status` | 查询试穿任务状态 |
 
 ---
 
@@ -410,6 +550,8 @@ sqlite3 dev.db
 sqlite3 dev.db "SELECT id, name, category FROM Item;"
 sqlite3 dev.db "SELECT id, name, isDefault FROM PersonImage;"
 sqlite3 dev.db "SELECT id, personImageId, topItemId, isFavorite FROM Outfit;"
+sqlite3 dev.db "SELECT id, score, scoreDims FROM Outfit WHERE score IS NOT NULL;"
+sqlite3 dev.db "SELECT id, date, rank, outfitId FROM DailyRecommendation;"
 sqlite3 dev.db ".tables"     # 列出所有表
 sqlite3 dev.db ".schema"     # 查看建表语句
 ```

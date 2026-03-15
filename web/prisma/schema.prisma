@@ -34,14 +34,29 @@ model PersonImage {
 }
 
 model Outfit {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   personImageId   String
   topItemId       String?
   bottomItemId    String?
   resultImagePath String
-  isFavorite      Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  isFavorite      Boolean   @default(false)
+  score           Float?
+  scoreDims       String?
+  evaluation      String?
+  scoredAt        DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@unique([personImageId, topItemId, bottomItemId])
+}
+
+model DailyRecommendation {
+  id        String   @id @default(cuid())
+  date      String
+  rank      Int
+  outfitId  String
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@unique([date, rank])
 }

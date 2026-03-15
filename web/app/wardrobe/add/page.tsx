@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useRef, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 
 const CATEGORIES = [
@@ -16,16 +16,21 @@ const CATEGORIES = [
 const SEASONS = ["春", "夏", "秋", "冬", "四季"];
 const OCCASIONS = ["日常", "上班", "约会", "运动", "正式", "出行"];
 
-export default function AddItemPage() {
+function AddItemForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const initialCategory = CATEGORIES.some(c => c.value === searchParams.get("category"))
+    ? searchParams.get("category")!
+    : "TOP";
 
   const [preview, setPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
-    category: "TOP",
+    category: initialCategory,
     subcategory: "",
     color: "",
     style: "",
@@ -313,5 +318,13 @@ export default function AddItemPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function AddItemPage() {
+  return (
+    <Suspense>
+      <AddItemForm />
+    </Suspense>
   );
 }

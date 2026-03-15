@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { href: "/", label: "首页" },
   { href: "/wardrobe", label: "衣橱" },
   { href: "/tryon", label: "试穿" },
+  { href: "/recommendations", label: "推荐" },
   { href: "/favorites", label: "收藏" },
   { href: "/persons", label: "人像" },
 ];

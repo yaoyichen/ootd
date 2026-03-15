@@ -29,6 +29,16 @@ const FEATURES = [
     ),
   },
   {
+    href: "/recommendations",
+    title: "每日推荐",
+    desc: "AI 智能搭配，每天精选 3 套最佳穿搭",
+    icon: (
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: "#FF9500" }}>
+        <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z" />
+      </svg>
+    ),
+  },
+  {
     href: "/persons",
     title: "人像管理",
     desc: "上传你的全身照，用于试穿生成",
@@ -89,7 +99,7 @@ export default function Home() {
         </div>
 
         {/* Feature cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {FEATURES.map((f) => (
             <Link
               key={f.href}

@@ -83,7 +83,7 @@ export default function WardrobePage() {
             </p>
           </div>
           <Link
-            href="/wardrobe/add"
+            href={activeCategory ? `/wardrobe/add?category=${activeCategory}` : "/wardrobe/add"}
             className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white"
             style={{
               background: "linear-gradient(135deg, #FF9500, #FFCC00)",
@@ -144,7 +144,7 @@ export default function WardrobePage() {
               衣橱还是空的，添加你的第一件单品吧
             </p>
             <Link
-              href="/wardrobe/add"
+              href={activeCategory ? `/wardrobe/add?category=${activeCategory}` : "/wardrobe/add"}
               className="px-5 py-2 rounded-full text-sm font-semibold text-white"
               style={{ background: "linear-gradient(135deg, #FF9500, #FFCC00)" }}
             >

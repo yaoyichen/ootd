@@ -170,6 +170,9 @@ export default function TryonPage() {
   const [outfitId, setOutfitId] = useState<string | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isCached, setIsCached] = useState(false);
+  const [score, setScore] = useState<number | null>(null);
+  const [evaluation, setEvaluation] = useState<string | null>(null);
+  const [scoring, setScoring] = useState(false);
 
   useEffect(() => {
     fetch("/api/persons").then((r) => r.json()).then((data) => {
@@ -240,6 +243,8 @@ export default function TryonPage() {
     setError(null);
     setResultImage(null);
     setIsCached(false);
+    setScore(null);
+    setEvaluation(null);
 
     try {
       const res = await fetch("/api/tryon", {
@@ -292,7 +297,34 @@ export default function TryonPage() {
 
   const handleRegenerate = () => {
     setIsCached(false);
+    setScore(null);
+    setEvaluation(null);
     handleGenerate();
+  };
+
+  const handleEvaluate = async () => {
+    if (!outfitId || scoring) return;
+    setScoring(true);
+    try {
+      const res = await fetch(`/api/outfits/${outfitId}/evaluate`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        console.error("Evaluate API error:", data);
+        setError(data.error || "评分请求失败");
+        return;
+      }
+      if (data.score !== undefined) {
+        setScore(data.score);
+        setEvaluation(data.evaluation || null);
+      }
+    } catch (err) {
+      console.error("Evaluate fetch error:", err);
+      setError("评分请求失败，请重试");
+    } finally {
+      setScoring(false);
+    }
   };
 
   const isProcessing = status === "processing";
@@ -586,6 +618,70 @@ export default function TryonPage() {
                 </div>
               )}
             </div>
+
+            {/* AI Scoring section */}
+            {status === "completed" && outfitId && (
+              <div className="glass rounded-2xl p-4">
+                {score !== null ? (
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="relative inline-flex items-center justify-center" style={{ width: 56, height: 56 }}>
+                        <svg width={56} height={56} className="-rotate-90">
+                          <circle cx={28} cy={28} r={24} fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth={4} />
+                          <circle
+                            cx={28} cy={28} r={24} fill="none"
+                            stroke={score >= 80 ? "#34C759" : score >= 60 ? "#FF9500" : "#FF3B30"}
+                            strokeWidth={4} strokeLinecap="round"
+                            strokeDasharray={2 * Math.PI * 24}
+                            strokeDashoffset={2 * Math.PI * 24 * (1 - score / 100)}
+                            style={{ transition: "stroke-dashoffset 0.8s ease" }}
+                          />
+                        </svg>
+                        <span
+                          className="absolute text-sm font-bold"
+                          style={{ color: score >= 80 ? "#34C759" : score >= 60 ? "#FF9500" : "#FF3B30" }}
+                        >
+                          {score}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold mb-1" style={{ color: "#1D1D1F" }}>AI 穿搭评分</p>
+                      <p className="text-xs leading-relaxed" style={{ color: "#6E6E73" }}>
+                        {evaluation}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleEvaluate}
+                    disabled={scoring}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                    style={{
+                      color: "#FF9500",
+                      background: "rgba(255,149,0,0.06)",
+                    }}
+                  >
+                    {scoring ? (
+                      <>
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" style={{ animation: "spin 1s linear infinite" }}>
+                          <circle cx="12" cy="12" r="10" stroke="rgba(255,149,0,0.2)" strokeWidth="2.5" fill="none" />
+                          <path d="M12 2a10 10 0 0 1 10 10" stroke="#FF9500" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+                        </svg>
+                        AI 评分中...
+                      </>
+                    ) : (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF9500" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z" />
+                        </svg>
+                        AI 评分
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </main>
