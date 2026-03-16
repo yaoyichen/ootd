@@ -179,44 +179,38 @@ export async function POST(req: NextRequest) {
             message: `正在 AI 评分（共 ${outfitResults.length} 套）...`,
           });
 
-          const scored: (typeof outfitResults[number] & {
-            score: number;
-            scoreDims: string | null;
-            evaluation: string;
-          })[] = [];
+          const scored = await Promise.all(
+            outfitResults.map(async (outfit, i) => {
+              try {
+                const result = await scoreOutfit(outfit.imagePath);
+                const dimsJson = JSON.stringify(result.dims);
 
-          for (let i = 0; i < outfitResults.length; i++) {
-            const outfit = outfitResults[i];
-            if (i > 0) await sleep(1500);
-            try {
-              const result = await scoreOutfit(outfit.imagePath);
-              const dimsJson = JSON.stringify(result.dims);
+                await prisma.outfit.update({
+                  where: { id: outfit.outfitId },
+                  data: {
+                    score: result.score,
+                    scoreDims: dimsJson,
+                    evaluation: result.evaluation,
+                    scoredAt: new Date(),
+                  },
+                });
 
-              await prisma.outfit.update({
-                where: { id: outfit.outfitId },
-                data: {
+                send("progress", {
+                  step: "scored",
+                  message: `穿搭 ${i + 1} 评分完成：${result.score} 分`,
+                  current: i + 1,
+                  total: outfitResults.length,
+                  outfitId: outfit.outfitId,
                   score: result.score,
-                  scoreDims: dimsJson,
-                  evaluation: result.evaluation,
-                  scoredAt: new Date(),
-                },
-              });
+                });
 
-              scored.push({ ...outfit, score: result.score, scoreDims: dimsJson, evaluation: result.evaluation });
-
-              send("progress", {
-                step: "scored",
-                message: `穿搭 ${i + 1} 评分完成：${result.score} 分`,
-                current: i + 1,
-                total: outfitResults.length,
-                outfitId: outfit.outfitId,
-                score: result.score,
-              });
-            } catch (err) {
-              console.error(`Scoring failed for outfit ${outfit.outfitId}:`, err);
-              scored.push({ ...outfit, score: 70, scoreDims: null, evaluation: "评分暂不可用" });
-            }
-          }
+                return { ...outfit, score: result.score, scoreDims: dimsJson, evaluation: result.evaluation };
+              } catch (err) {
+                console.error(`Scoring failed for outfit ${outfit.outfitId}:`, err);
+                return { ...outfit, score: 70, scoreDims: null as string | null, evaluation: "评分暂不可用" };
+              }
+            })
+          );
 
           // Step 4: Sort by score, take top 3, save as DailyRecommendation
           scored.sort((a, b) => b.score - a.score);

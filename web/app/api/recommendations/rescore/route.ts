@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { scoreOutfit } from "@/lib/qwen";
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
@@ -28,32 +26,29 @@ export async function POST(req: NextRequest) {
     });
     const outfitMap = new Map(outfits.map((o) => [o.id, o]));
 
-    const scored: { outfitId: string; score: number }[] = [];
+    const scored = await Promise.all(
+      outfits.map(async (outfit) => {
+        try {
+          const result = await scoreOutfit(outfit.resultImagePath);
+          const dimsJson = JSON.stringify(result.dims);
 
-    for (let i = 0; i < outfits.length; i++) {
-      const outfit = outfits[i];
-      if (i > 0) await sleep(1500);
+          await prisma.outfit.update({
+            where: { id: outfit.id },
+            data: {
+              score: result.score,
+              scoreDims: dimsJson,
+              evaluation: result.evaluation,
+              scoredAt: new Date(),
+            },
+          });
 
-      try {
-        const result = await scoreOutfit(outfit.resultImagePath);
-        const dimsJson = JSON.stringify(result.dims);
-
-        await prisma.outfit.update({
-          where: { id: outfit.id },
-          data: {
-            score: result.score,
-            scoreDims: dimsJson,
-            evaluation: result.evaluation,
-            scoredAt: new Date(),
-          },
-        });
-
-        scored.push({ outfitId: outfit.id, score: result.score });
-      } catch (err) {
-        console.error(`Rescore failed for outfit ${outfit.id}:`, err);
-        scored.push({ outfitId: outfit.id, score: outfit.score ?? 70 });
-      }
-    }
+          return { outfitId: outfit.id, score: result.score };
+        } catch (err) {
+          console.error(`Rescore failed for outfit ${outfit.id}:`, err);
+          return { outfitId: outfit.id, score: outfit.score ?? 70 };
+        }
+      })
+    );
 
     scored.sort((a, b) => b.score - a.score);
     for (let i = 0; i < scored.length; i++) {
