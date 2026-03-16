@@ -27,6 +27,7 @@ function AddItemForm() {
 
   const [preview, setPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [recognizing, setRecognizing] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -41,13 +42,43 @@ function AddItemForm() {
     notes: "",
   });
 
+  const recognizeImage = useCallback(async (dataUrl: string) => {
+    setRecognizing(true);
+    try {
+      const res = await fetch("/api/items/recognize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: dataUrl }),
+      });
+      if (!res.ok) return;
+      const result = await res.json();
+      setForm((prev) => ({
+        ...prev,
+        name: prev.name || result.name || "",
+        category: result.category || prev.category,
+        color: prev.color || result.color || "",
+        style: prev.style || result.style || "",
+        season: prev.season || result.season || "",
+        occasion: prev.occasion || result.occasion || "",
+      }));
+    } catch {
+      // silent fail — user can fill manually
+    } finally {
+      setRecognizing(false);
+    }
+  }, []);
+
   const handleFile = useCallback((file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
-      if (e.target?.result) setPreview(e.target.result as string);
+      if (e.target?.result) {
+        const dataUrl = e.target.result as string;
+        setPreview(dataUrl);
+        recognizeImage(dataUrl);
+      }
     };
     reader.readAsDataURL(file);
-  }, []);
+  }, [recognizeImage]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -130,6 +161,16 @@ function AddItemForm() {
             {preview ? (
               <div className="relative w-full h-full">
                 <Image src={preview} alt="Preview" fill className="object-contain" />
+                {recognizing && (
+                  <div className="absolute inset-0 flex items-end justify-center pb-4" style={{ background: "linear-gradient(transparent 60%, rgba(0,0,0,0.4))" }}>
+                    <span className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium text-white" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)" }}>
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" style={{ animation: "spin 0.8s linear infinite" }}>
+                        <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="28 10" strokeLinecap="round" />
+                      </svg>
+                      AI 识别中...
+                    </span>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center gap-3">
