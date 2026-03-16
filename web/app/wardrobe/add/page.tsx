@@ -91,6 +91,21 @@ function AddItemForm() {
     [handleFile]
   );
 
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) handleFile(file);
+          return;
+        }
+      }
+    },
+    [handleFile]
+  );
+
   const updateField = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
@@ -200,9 +215,11 @@ function AddItemForm() {
             <div
               className="glass rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-[1.01]"
               style={{ aspectRatio: "4/3" }}
+              tabIndex={0}
               onClick={() => inputRef.current?.click()}
               onDrop={handleDrop}
               onDragOver={(e) => e.preventDefault()}
+              onPaste={handlePaste}
             >
               {preview ? (
                 <div className="relative w-full h-full">
@@ -230,7 +247,7 @@ function AddItemForm() {
                     </svg>
                   </div>
                   <p className="text-sm font-medium" style={{ color: "#1D1D1F" }}>点击上传单品图片</p>
-                  <p className="text-xs" style={{ color: "#AEAEB2" }}>拖拽或点击选择，建议平铺拍摄</p>
+                  <p className="text-xs" style={{ color: "#AEAEB2" }}>点击选择 / 拖拽 / 粘贴图片</p>
                 </div>
               )}
               <input
