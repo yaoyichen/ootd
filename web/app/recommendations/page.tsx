@@ -3,6 +3,53 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 
+interface CityOption {
+  id: string;
+  name: string;
+  adm1: string;
+  adm2: string;
+}
+
+interface WeatherSummary {
+  city: string;
+  temp: string;
+  feelsLike: string;
+  weather: string;
+  humidity: string;
+  wind: string;
+  todayRange: string;
+  clothingAdvice: string | null;
+}
+
+const PRESET_CITIES: CityOption[] = [
+  { id: "101210101", name: "杭州", adm1: "浙江省", adm2: "杭州" },
+  { id: "101010100", name: "北京", adm1: "北京市", adm2: "北京" },
+  { id: "101020100", name: "上海", adm1: "上海市", adm2: "上海" },
+  { id: "101280101", name: "广州", adm1: "广东省", adm2: "广州" },
+  { id: "101280601", name: "深圳", adm1: "广东省", adm2: "深圳" },
+  { id: "101190101", name: "南京", adm1: "江苏省", adm2: "南京" },
+  { id: "101200101", name: "武汉", adm1: "湖北省", adm2: "武汉" },
+  { id: "101110101", name: "西安", adm1: "陕西省", adm2: "西安" },
+  { id: "101270101", name: "成都", adm1: "四川省", adm2: "成都" },
+  { id: "101230101", name: "福州", adm1: "福建省", adm2: "福州" },
+  { id: "101250101", name: "长沙", adm1: "湖南省", adm2: "长沙" },
+  { id: "101040100", name: "重庆", adm1: "重庆市", adm2: "重庆" },
+];
+
+const DEFAULT_CITY_ID = "101210101";
+
+const WEATHER_ICONS: Record<string, string> = {
+  "晴": "☀️", "多云": "⛅", "阴": "☁️",
+  "小雨": "🌦️", "中雨": "🌧️", "大雨": "🌧️", "暴雨": "⛈️",
+  "雷阵雨": "⛈️", "阵雨": "🌦️",
+  "小雪": "🌨️", "中雪": "🌨️", "大雪": "❄️", "暴雪": "❄️",
+  "雨夹雪": "🌨️", "雾": "🌫️", "霾": "🌫️",
+};
+
+function getWeatherIcon(text: string): string {
+  return WEATHER_ICONS[text] || "🌤️";
+}
+
 interface ItemInfo {
   id: string;
   name: string;
@@ -113,6 +160,119 @@ function PersonPicker({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function WeatherCard({
+  weather,
+  cityId,
+  onCityChange,
+  loading,
+}: {
+  weather: WeatherSummary | null;
+  cityId: string;
+  onCityChange: (id: string) => void;
+  loading: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div
+      className="glass rounded-2xl p-4 mb-6 transition-all duration-300"
+      style={{ boxShadow: "0 1px 12px rgba(0,0,0,0.03)" }}
+    >
+      <div className="flex items-center justify-between gap-3">
+        {/* City dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setOpen(!open)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+            style={{
+              background: "rgba(255,149,0,0.08)",
+              color: "#FF9500",
+              border: "1px solid rgba(255,149,0,0.15)",
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+            {PRESET_CITIES.find((c) => c.id === cityId)?.name || "选择城市"}
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+          {open && (
+            <div
+              className="absolute top-full left-0 mt-1.5 z-30 rounded-xl py-1 max-h-52 overflow-y-auto"
+              style={{
+                background: "rgba(255,255,255,0.98)",
+                backdropFilter: "blur(20px)",
+                boxShadow: "0 4px 24px rgba(0,0,0,0.1)",
+                border: "1px solid rgba(0,0,0,0.06)",
+                minWidth: 120,
+              }}
+            >
+              {PRESET_CITIES.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => { onCityChange(c.id); setOpen(false); }}
+                  className="w-full text-left px-3.5 py-2 text-xs transition-colors hover:bg-black/[0.03]"
+                  style={{
+                    color: c.id === cityId ? "#FF9500" : "#1D1D1F",
+                    fontWeight: c.id === cityId ? 600 : 400,
+                  }}
+                >
+                  {c.name}
+                  <span className="ml-1" style={{ color: "#AEAEB2", fontSize: 10 }}>{c.adm1}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Weather info */}
+        {loading ? (
+          <div className="flex items-center gap-2">
+            <div
+              className="w-4 h-4 rounded-full"
+              style={{
+                border: "2px solid rgba(255,149,0,0.15)",
+                borderTopColor: "#FF9500",
+                animation: "spin 0.8s linear infinite",
+              }}
+            />
+            <span className="text-xs" style={{ color: "#AEAEB2" }}>获取天气中...</span>
+          </div>
+        ) : weather ? (
+          <div className="flex items-center gap-3 flex-1 justify-end">
+            <span className="text-xl leading-none">{getWeatherIcon(weather.weather)}</span>
+            <div className="text-right">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-lg font-bold" style={{ color: "#1D1D1F" }}>{weather.temp}</span>
+                <span className="text-[10px]" style={{ color: "#AEAEB2" }}>{weather.todayRange}</span>
+              </div>
+              <p className="text-[10px]" style={{ color: "#6E6E73" }}>
+                {weather.weather} · 体感 {weather.feelsLike} · {weather.wind}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <span className="text-xs" style={{ color: "#AEAEB2" }}>天气数据暂不可用</span>
+        )}
+      </div>
+
+      {/* Clothing advice */}
+      {weather?.clothingAdvice && (
+        <div
+          className="mt-3 px-3 py-2 rounded-xl text-xs leading-relaxed"
+          style={{ background: "rgba(255,149,0,0.04)", color: "#6E6E73" }}
+        >
+          <span style={{ color: "#FF9500" }}>👔 穿衣建议：</span>
+          {weather.clothingAdvice}
+        </div>
+      )}
     </div>
   );
 }
@@ -410,6 +570,34 @@ export default function RecommendationsPage() {
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [showPersonPicker, setShowPersonPicker] = useState(false);
   const [rescoring, setRescoring] = useState(false);
+  const [cityId, setCityId] = useState(DEFAULT_CITY_ID);
+  const [weather, setWeather] = useState<WeatherSummary | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+
+  const fetchWeather = useCallback(async (locId: string) => {
+    setWeatherLoading(true);
+    try {
+      const res = await fetch(`/api/weather?locationId=${locId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setWeather(data.summary ?? null);
+      } else {
+        setWeather(null);
+      }
+    } catch {
+      setWeather(null);
+    } finally {
+      setWeatherLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchWeather(cityId);
+  }, [cityId, fetchWeather]);
+
+  const handleCityChange = (id: string) => {
+    setCityId(id);
+  };
 
   const handlePersonChange = (id: string) => {
     if (id === selectedPerson) return;
@@ -466,7 +654,7 @@ export default function RecommendationsPage() {
       const res = await fetch("/api/recommendations/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ personImageId: selectedPerson }),
+        body: JSON.stringify({ personImageId: selectedPerson, locationId: cityId }),
       });
 
       if (!res.ok) {
@@ -543,7 +731,7 @@ export default function RecommendationsPage() {
       setError(err instanceof Error ? err.message : "网络错误");
       setPhase("error");
     }
-  }, [selectedPerson]);
+  }, [selectedPerson, cityId]);
 
   const handleToggleFavorite = async (outfitId: string) => {
     const rec = recommendations.find((r) => r.outfitId === outfitId);
@@ -654,6 +842,14 @@ export default function RecommendationsPage() {
             AI 从你的衣橱中智能搭配，精选最佳方案
           </p>
         </div>
+
+        {/* Weather card */}
+        <WeatherCard
+          weather={weather}
+          cityId={cityId}
+          onCityChange={handleCityChange}
+          loading={weatherLoading}
+        />
 
         {/* Person selector bar - always visible when persons exist */}
         {persons.length > 0 && phase !== "loading" && (

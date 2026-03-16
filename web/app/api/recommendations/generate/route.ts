@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { suggestCombinations, scoreOutfit } from "@/lib/qwen";
 import { generateTryon } from "@/lib/tryon";
+import { getWeatherData, toWeatherSummary, buildWeatherPromptContext, DEFAULT_CITY_ID } from "@/lib/weather";
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -16,7 +17,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { personImageId } = body;
+    const { personImageId, locationId } = body;
 
     if (!personImageId) {
       return new Response(JSON.stringify({ error: "personImageId is required" }), {
@@ -57,6 +58,24 @@ export async function POST(req: NextRequest) {
         };
 
         try {
+          // Step 0: Fetch weather context (non-blocking — skip on failure)
+          let weatherContext: string | undefined;
+          if (locationId && process.env.QWEATHER_API_KEY) {
+            try {
+              send("progress", { step: "weather", message: "正在获取天气信息..." });
+              const weatherData = await getWeatherData(locationId || DEFAULT_CITY_ID);
+              const summary = toWeatherSummary(weatherData);
+              weatherContext = buildWeatherPromptContext(summary);
+              send("progress", {
+                step: "weather_done",
+                message: `${summary.city} ${summary.weather} ${summary.temp}`,
+                weather: summary,
+              });
+            } catch (err) {
+              console.error("Weather fetch failed, proceeding without:", err);
+            }
+          }
+
           // Step 1: LLM suggests combinations
           send("progress", { step: "matching", message: "正在智能匹配单品组合..." });
 
@@ -69,7 +88,8 @@ export async function POST(req: NextRequest) {
               style: i.style,
               season: i.season,
               occasion: i.occasion,
-            }))
+            })),
+            weatherContext
           );
 
           if (combinations.length === 0) {
