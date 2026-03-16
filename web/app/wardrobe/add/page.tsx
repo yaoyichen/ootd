@@ -26,7 +26,9 @@ function AddItemForm() {
     : "TOP";
 
   const [preview, setPreview] = useState<string | null>(null);
+  const [processedPreview, setProcessedPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saveDone, setSaveDone] = useState(false);
   const [recognizing, setRecognizing] = useState(false);
 
   const [form, setForm] = useState({
@@ -103,7 +105,7 @@ function AddItemForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image: preview, folder: "items" }),
       });
-      const { path: imagePath } = await uploadRes.json();
+      const { path: imagePath, processedImage } = await uploadRes.json();
 
       await fetch("/api/items", {
         method: "POST",
@@ -114,6 +116,13 @@ function AddItemForm() {
           imagePath,
         }),
       });
+
+      // Show the bg-removed result before navigating
+      if (processedImage) {
+        setProcessedPreview(processedImage);
+        setSaveDone(true);
+        await new Promise((r) => setTimeout(r, 2000));
+      }
 
       router.push("/wardrobe");
     } catch {
@@ -150,54 +159,92 @@ function AddItemForm() {
         </div>
 
         <div className="flex flex-col gap-6">
-          {/* Image upload */}
-          <div
-            className="glass rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-[1.01]"
-            style={{ aspectRatio: "4/3" }}
-            onClick={() => inputRef.current?.click()}
-            onDrop={handleDrop}
-            onDragOver={(e) => e.preventDefault()}
-          >
-            {preview ? (
-              <div className="relative w-full h-full">
-                <Image src={preview} alt="Preview" fill className="object-contain" />
-                {recognizing && (
-                  <div className="absolute inset-0 flex items-end justify-center pb-4" style={{ background: "linear-gradient(transparent 60%, rgba(0,0,0,0.4))" }}>
-                    <span className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium text-white" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)" }}>
-                      <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" style={{ animation: "spin 0.8s linear infinite" }}>
-                        <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="28 10" strokeLinecap="round" />
-                      </svg>
-                      AI 识别中...
-                    </span>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center gap-3">
-                <div
-                  className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                  style={{ background: "rgba(255,149,0,0.08)" }}
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: "#FF9500" }}>
-                    <path d="M12 16V8m0 0-3 3m3-3 3 3" />
-                    <path d="M3 15v1a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4v-1" />
+          {/* Image upload / comparison */}
+          {saveDone && processedPreview ? (
+            <div className="glass rounded-3xl overflow-hidden p-4">
+              <div className="flex gap-3" style={{ aspectRatio: "4/3" }}>
+                {/* Original */}
+                <div className="relative flex-1 rounded-2xl overflow-hidden" style={{ background: "rgba(0,0,0,0.03)" }}>
+                  <Image src={preview!} alt="原图" fill className="object-contain" />
+                  <span
+                    className="absolute bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-medium text-white"
+                    style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(8px)" }}
+                  >
+                    原图
+                  </span>
+                </div>
+                {/* Arrow */}
+                <div className="flex items-center">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#AEAEB2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12h14m-6-6 6 6-6 6" />
                   </svg>
                 </div>
-                <p className="text-sm font-medium" style={{ color: "#1D1D1F" }}>点击上传单品图片</p>
-                <p className="text-xs" style={{ color: "#AEAEB2" }}>拖拽或点击选择，建议平铺拍摄</p>
+                {/* Processed */}
+                <div
+                  className="relative flex-1 rounded-2xl overflow-hidden"
+                  style={{
+                    background: "repeating-conic-gradient(rgba(0,0,0,0.06) 0% 25%, transparent 0% 50%) 0 0 / 16px 16px",
+                  }}
+                >
+                  <Image src={processedPreview} alt="去背景" fill className="object-contain" />
+                  <span
+                    className="absolute bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-medium text-white whitespace-nowrap"
+                    style={{ background: "rgba(255,149,0,0.8)", backdropFilter: "blur(8px)" }}
+                  >
+                    背景已去除
+                  </span>
+                </div>
               </div>
-            )}
-            <input
-              ref={inputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleFile(file);
-              }}
-            />
-          </div>
+            </div>
+          ) : (
+            <div
+              className="glass rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-[1.01]"
+              style={{ aspectRatio: "4/3" }}
+              onClick={() => inputRef.current?.click()}
+              onDrop={handleDrop}
+              onDragOver={(e) => e.preventDefault()}
+            >
+              {preview ? (
+                <div className="relative w-full h-full">
+                  <Image src={preview} alt="Preview" fill className="object-contain" />
+                  {recognizing && (
+                    <div className="absolute inset-0 flex items-end justify-center pb-4" style={{ background: "linear-gradient(transparent 60%, rgba(0,0,0,0.4))" }}>
+                      <span className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium text-white" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)" }}>
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" style={{ animation: "spin 0.8s linear infinite" }}>
+                          <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="28 10" strokeLinecap="round" />
+                        </svg>
+                        AI 识别中...
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-3">
+                  <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                    style={{ background: "rgba(255,149,0,0.08)" }}
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: "#FF9500" }}>
+                      <path d="M12 16V8m0 0-3 3m3-3 3 3" />
+                      <path d="M3 15v1a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4v-1" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-medium" style={{ color: "#1D1D1F" }}>点击上传单品图片</p>
+                  <p className="text-xs" style={{ color: "#AEAEB2" }}>拖拽或点击选择，建议平铺拍摄</p>
+                </div>
+              )}
+              <input
+                ref={inputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFile(file);
+                }}
+              />
+            </div>
+          )}
 
           {/* Form */}
           <div className="glass rounded-3xl p-6 flex flex-col gap-5">
@@ -350,7 +397,7 @@ function AddItemForm() {
                   <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" strokeWidth="3" fill="none" />
                   <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round" fill="none" />
                 </svg>
-                保存中...
+                去背景 & 保存中...
               </span>
             ) : (
               "保存到衣橱"

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import { removeBackground } from "@/lib/remove-bg";
 
 const UPLOAD_ROOT = path.join(process.cwd(), "public", "uploads");
 
@@ -24,10 +25,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const raw = image.startsWith("data:") ? image.split(",")[1] : image;
+    // Remove background for clothing items
+    let processedImage = image;
+    if (folder === "items") {
+      processedImage = await removeBackground(image);
+    }
+
+    const raw = processedImage.startsWith("data:")
+      ? processedImage.split(",")[1]
+      : processedImage;
     const buffer = Buffer.from(raw, "base64");
 
-    const ext = image.startsWith("data:image/png") ? ".png" : ".jpg";
+    const ext = folder === "items" ? ".png" : processedImage.startsWith("data:image/png") ? ".png" : ".jpg";
     const filename = `${crypto.randomUUID()}${ext}`;
 
     const dir = path.join(UPLOAD_ROOT, folder);
@@ -40,7 +49,10 @@ export async function POST(req: NextRequest) {
 
     const publicPath = `/uploads/${folder}/${filename}`;
 
-    return NextResponse.json({ path: publicPath });
+    return NextResponse.json({
+      path: publicPath,
+      ...(folder === "items" && { processedImage: processedImage }),
+    });
   } catch (err) {
     console.error("Upload error:", err);
     return NextResponse.json(
