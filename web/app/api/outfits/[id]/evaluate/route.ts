@@ -10,6 +10,8 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
+    const body = await _req.json().catch(() => ({}));
+    const force = body.force === true;
 
     const outfit = await prisma.outfit.findUnique({ where: { id } });
     if (!outfit) {
@@ -17,6 +19,7 @@ export async function POST(
     }
 
     if (
+      !force &&
       outfit.score !== null &&
       outfit.scoredAt &&
       Date.now() - outfit.scoredAt.getTime() < CACHE_TTL_MS

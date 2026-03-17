@@ -133,6 +133,7 @@ export async function POST(req: NextRequest) {
           topItemId: topItemId || null,
           bottomItemId: bottomItemId || null,
           resultImagePath: localPath,
+          isFavorite: true,
         },
       });
     }

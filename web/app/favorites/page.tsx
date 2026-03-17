@@ -3,6 +3,14 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 
+interface ScoreDims {
+  colorHarmony: number;
+  styleCohesion: number;
+  trendiness: number;
+  practicality: number;
+  creativity: number;
+}
+
 interface OutfitRecord {
   id: string;
   personImageId: string;
@@ -10,6 +18,9 @@ interface OutfitRecord {
   bottomItemId: string | null;
   resultImagePath: string;
   isFavorite: boolean;
+  score: number | null;
+  scoreDims: string | null;
+  evaluation: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -33,6 +44,7 @@ export default function FavoritesPage() {
   const [persons, setPersons] = useState<PersonData[]>([]);
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [scoring, setScoring] = useState<Set<string>>(new Set());
 
   const fetchAll = useCallback(async () => {
     try {
@@ -81,6 +93,39 @@ export default function FavoritesPage() {
       await fetch(`/api/outfits/${id}`, { method: "DELETE" });
     } catch {
       fetchAll();
+    }
+  };
+
+  const handleScore = async (id: string) => {
+    setScoring((prev) => new Set(prev).add(id));
+    try {
+      const res = await fetch(`/api/outfits/${id}/evaluate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ force: true }),
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setOutfits((prev) =>
+        prev.map((o) =>
+          o.id === id
+            ? {
+                ...o,
+                score: data.score,
+                scoreDims: JSON.stringify(data.scoreDims),
+                evaluation: data.evaluation,
+              }
+            : o
+        )
+      );
+    } catch {
+      /* ignore */
+    } finally {
+      setScoring((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
   };
 
@@ -181,6 +226,9 @@ export default function FavoritesPage() {
               const person = getPerson(outfit.personImageId);
               const top = getItem(outfit.topItemId);
               const bottom = getItem(outfit.bottomItemId);
+              const dims: ScoreDims | null = outfit.scoreDims
+                ? JSON.parse(outfit.scoreDims)
+                : null;
 
               return (
                 <div
@@ -212,21 +260,48 @@ export default function FavoritesPage() {
                   </button>
 
                   <div className="p-4">
+                    {/* Radar chart + evaluation */}
+                    {outfit.score != null && dims && (
+                      <div className="flex items-center gap-3 mb-3">
+                        <RadarChart dims={dims} score={outfit.score} size={120} />
+                        {outfit.evaluation && (
+                          <p
+                            className="flex-1 text-xs leading-relaxed line-clamp-4"
+                            style={{ color: "#6E6E73" }}
+                          >
+                            {outfit.evaluation}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
                     <div className="flex gap-2 mb-3">
                       {person && (
-                        <div className="relative w-8 h-8 rounded-lg overflow-hidden flex-shrink-0" title={person.name}>
+                        <button
+                          onClick={() => setLightbox(person.imagePath)}
+                          className="relative w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-orange-300 transition-all"
+                          title={person.name}
+                        >
                           <Image src={person.imagePath} alt={person.name} fill className="object-cover" />
-                        </div>
+                        </button>
                       )}
                       {top && (
-                        <div className="relative w-8 h-8 rounded-lg overflow-hidden flex-shrink-0" title={top.name}>
+                        <button
+                          onClick={() => setLightbox(top.imagePath)}
+                          className="relative w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-orange-300 transition-all"
+                          title={top.name}
+                        >
                           <Image src={top.imagePath} alt={top.name} fill className="object-cover" />
-                        </div>
+                        </button>
                       )}
                       {bottom && (
-                        <div className="relative w-8 h-8 rounded-lg overflow-hidden flex-shrink-0" title={bottom.name}>
+                        <button
+                          onClick={() => setLightbox(bottom.imagePath)}
+                          className="relative w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-orange-300 transition-all"
+                          title={bottom.name}
+                        >
                           <Image src={bottom.imagePath} alt={bottom.name} fill className="object-cover" />
-                        </div>
+                        </button>
                       )}
                       <div className="flex-1" />
                       <span className="text-[10px] self-center" style={{ color: "#AEAEB2" }}>
@@ -259,6 +334,29 @@ export default function FavoritesPage() {
                         下载
                       </a>
                       <button
+                        onClick={() => handleScore(outfit.id)}
+                        disabled={scoring.has(outfit.id)}
+                        className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-colors"
+                        style={{
+                          background: scoring.has(outfit.id)
+                            ? "rgba(255,149,0,0.12)"
+                            : "rgba(255,149,0,0.06)",
+                        }}
+                        title={outfit.score != null ? "重新打分" : "AI 打分"}
+                      >
+                        {scoring.has(outfit.id) ? (
+                          <svg width="14" height="14" viewBox="0 0 24 24" style={{ animation: "spin 1s linear infinite" }}>
+                            <circle cx="12" cy="12" r="10" fill="none" stroke="#FF9500" strokeWidth="2" strokeDasharray="31 31" strokeLinecap="round" />
+                          </svg>
+                        ) : (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF9500" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 20V10" />
+                            <path d="M18 20V4" />
+                            <path d="M6 20v-4" />
+                          </svg>
+                        )}
+                      </button>
+                      <button
                         onClick={() => handleDelete(outfit.id)}
                         className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
                         style={{ background: "rgba(0,0,0,0.04)" }}
@@ -276,6 +374,159 @@ export default function FavoritesPage() {
           </div>
         )}
       </main>
+    </div>
+  );
+}
+
+const DIM_LABELS: { key: keyof ScoreDims; label: string }[] = [
+  { key: "colorHarmony", label: "色彩" },
+  { key: "styleCohesion", label: "风格" },
+  { key: "trendiness", label: "时尚" },
+  { key: "practicality", label: "实穿" },
+  { key: "creativity", label: "创意" },
+];
+
+function RadarChart({
+  dims,
+  score,
+  size = 120,
+}: {
+  dims: ScoreDims;
+  score: number;
+  size?: number;
+}) {
+  const [hovered, setHovered] = useState<number | null>(null);
+
+  const cx = size / 2;
+  const cy = size / 2;
+  const maxR = size * 0.34;
+  const labelR = size * 0.46;
+  const levels = [20, 40, 60, 80, 100];
+  const n = DIM_LABELS.length;
+
+  const angleOf = (i: number) => (Math.PI * 2 * i) / n - Math.PI / 2;
+
+  const pointAt = (i: number, value: number) => {
+    const a = angleOf(i);
+    const r = (value / 100) * maxR;
+    return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+  };
+
+  const gridPaths = levels.map((lv) => {
+    const pts = Array.from({ length: n }, (_, i) => pointAt(i, lv));
+    return pts.map((p) => `${p[0]},${p[1]}`).join(" ");
+  });
+
+  const dataPts = DIM_LABELS.map((d, i) => pointAt(i, dims[d.key]));
+  const dataPath = dataPts.map((p) => `${p[0]},${p[1]}`).join(" ");
+
+  const displayScore = hovered !== null ? dims[DIM_LABELS[hovered].key] : score;
+  const scoreColor =
+    displayScore >= 80 ? "#34C759" : displayScore >= 60 ? "#FF9500" : "#FF3B30";
+
+  return (
+    <div
+      className="relative inline-flex items-center justify-center flex-shrink-0"
+      style={{ width: size, height: size }}
+      onMouseLeave={() => setHovered(null)}
+    >
+      <svg width={size} height={size}>
+        {gridPaths.map((pts, i) => (
+          <polygon
+            key={i}
+            points={pts}
+            fill="none"
+            stroke="rgba(0,0,0,0.06)"
+            strokeWidth={0.5}
+          />
+        ))}
+        {Array.from({ length: n }, (_, i) => {
+          const [ex, ey] = pointAt(i, 100);
+          const active = hovered === i;
+          return (
+            <line
+              key={i}
+              x1={cx}
+              y1={cy}
+              x2={ex}
+              y2={ey}
+              stroke={active ? "#FF9500" : "rgba(0,0,0,0.04)"}
+              strokeWidth={active ? 1.5 : 0.5}
+              style={{ transition: "stroke 0.2s, stroke-width 0.2s" }}
+            />
+          );
+        })}
+        <polygon
+          points={dataPath}
+          fill="rgba(255,149,0,0.12)"
+          stroke="#FF9500"
+          strokeWidth={1.5}
+          strokeLinejoin="round"
+        />
+        {dataPts.map((p, i) => {
+          const active = hovered === i;
+          return (
+            <circle
+              key={i}
+              cx={p[0]}
+              cy={p[1]}
+              r={active ? 4 : 2}
+              fill="#FF9500"
+              stroke={active ? "white" : "none"}
+              strokeWidth={active ? 2 : 0}
+              style={{ transition: "r 0.2s" }}
+            />
+          );
+        })}
+        {DIM_LABELS.map((d, i) => {
+          const a = angleOf(i);
+          const lx = cx + labelR * Math.cos(a);
+          const ly = cy + labelR * Math.sin(a);
+          const active = hovered === i;
+          const dimVal = dims[d.key];
+          const label = active ? `${d.label} ${dimVal}` : d.label;
+          return (
+            <text
+              key={d.key}
+              x={lx}
+              y={ly}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fontSize={active ? 10 : 9}
+              fontWeight={active ? 700 : 500}
+              fill={active ? "#FF9500" : "#6E6E73"}
+              style={{ transition: "fill 0.2s, font-size 0.2s", cursor: "default" }}
+            >
+              {label}
+            </text>
+          );
+        })}
+        {DIM_LABELS.map((_, i) => {
+          const a = angleOf(i);
+          const hx = cx + labelR * Math.cos(a);
+          const hy = cy + labelR * Math.sin(a);
+          return (
+            <circle
+              key={`hit-${i}`}
+              cx={hx}
+              cy={hy}
+              r={12}
+              fill="transparent"
+              onMouseEnter={() => setHovered(i)}
+            />
+          );
+        })}
+      </svg>
+      <span
+        className="absolute font-bold pointer-events-none"
+        style={{
+          color: scoreColor,
+          fontSize: size * 0.15,
+          transition: "color 0.2s",
+        }}
+      >
+        {displayScore}
+      </span>
     </div>
   );
 }
