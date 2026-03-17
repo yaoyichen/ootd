@@ -2,10 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { SCORING_SYSTEM_PROMPT, SCORING_USER_PROMPT } from "./prompts/scoring";
 import { buildMatchingPrompt, type ItemMeta } from "./prompts/matching";
-
-const API_KEY = process.env.DASHSCOPE_API_KEY ?? "";
-const CHAT_API_URL =
-  "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions";
+import { chatCompletion } from "./llm";
 
 export interface ScoreDims {
   colorHarmony: number;
@@ -59,42 +56,22 @@ function clampScore(n: number): number {
 }
 
 export async function scoreOutfit(imagePath: string): Promise<ScoreResult> {
-  if (!API_KEY) throw new Error("DASHSCOPE_API_KEY not configured");
-
   const imageUrl = imagePathToDataUrl(imagePath);
 
-  const systemPrompt = SCORING_SYSTEM_PROMPT;
-  const userPrompt = SCORING_USER_PROMPT;
-
-  const res = await fetch(CHAT_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "qwen-vl-max",
-      temperature: 0.7,
-      messages: [
-        { role: "system", content: systemPrompt },
-        {
-          role: "user",
-          content: [
-            { type: "image_url", image_url: { url: imageUrl } },
-            { type: "text", text: userPrompt },
-          ],
-        },
-      ],
-    }),
+  const { content: text } = await chatCompletion({
+    model: "vision",
+    temperature: 0.7,
+    messages: [
+      { role: "system", content: SCORING_SYSTEM_PROMPT },
+      {
+        role: "user",
+        content: [
+          { type: "image_url", image_url: { url: imageUrl } },
+          { type: "text", text: SCORING_USER_PROMPT },
+        ],
+      },
+    ],
   });
-
-  const data = await res.json();
-  if (!res.ok) {
-    console.error("Qwen-VL scoring error:", data);
-    throw new Error(data.error?.message || "评分请求失败");
-  }
-
-  const text: string = data.choices?.[0]?.message?.content ?? "";
   console.log("[ScoreOutfit] raw response:", text);
 
   const jsonMatch = text.match(/\{[\s\S]*?\}/);
@@ -135,8 +112,6 @@ export async function suggestCombinations(
   items: ItemMeta[],
   weatherContext?: string
 ): Promise<CombinationSuggestion[]> {
-  if (!API_KEY) throw new Error("DASHSCOPE_API_KEY not configured");
-
   const tops = items.filter(
     (i) => i.category === "TOP" || i.category === "OUTERWEAR"
   );
@@ -150,25 +125,10 @@ export async function suggestCombinations(
 
   const prompt = buildMatchingPrompt(tops, bottoms, weatherContext);
 
-  const res = await fetch(CHAT_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "qwen-max",
-      messages: [{ role: "user", content: prompt }],
-    }),
+  const { content: text } = await chatCompletion({
+    model: "text",
+    messages: [{ role: "user", content: prompt }],
   });
-
-  const data = await res.json();
-  if (!res.ok) {
-    console.error("Qwen-Max suggestion error:", data);
-    throw new Error(data.error?.message || "搭配推荐请求失败");
-  }
-
-  const text: string = data.choices?.[0]?.message?.content ?? "";
   const jsonMatch = text.match(/\[[\s\S]*\]/);
   if (!jsonMatch) {
     console.error("Qwen-Max unexpected response:", text);

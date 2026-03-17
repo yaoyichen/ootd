@@ -22,7 +22,7 @@
 
 ### 选定理由
 
-1. **AI 服务全在阿里云**：DashScope（试穿/评分/识别/匹配）和 QWeather 都在国内，ECS 调用延迟最低
+1. **AI 服务全在阿里云**：DashScope（试穿/抠图为 DashScope 专有；评分/识别/匹配通过 LLM 抽象层可切换 provider）和 QWeather 都在国内，ECS 调用延迟最低
 2. **SQLite 零迁移**：当前开发用的 SQLite + 本地文件存储方案可以直接上线，无需换数据库
 3. **国内用户**：目标用户在国内，ECS 访问速度有保障
 4. **成本可控**：试用阶段一台低配 ECS 即可，后续可平滑升级
@@ -75,7 +75,7 @@ Next.js App (PM2 托管)
     │     ├── /api/items         → Prisma → SQLite (dev.db)
     │     ├── /api/weather       → WeatherCache → QWeather API
     │     ├── /api/tryon         → DashScope (qwen-image-2.0-pro)
-    │     ├── /api/recommendations/generate → DashScope (qwen-max + vl-max)
+    │     ├── /api/recommendations/generate → LLM 抽象层 (dashscope: qwen-max/vl-max, openai-compat: gpt-4o)
     │     └── /api/upload        → 本地文件系统
     └── SQLite 数据库 (dev.db)
 ```
@@ -132,9 +132,15 @@ npm install
 # 配置环境变量
 cp .env.example .env.local
 # 编辑 .env.local，填入以下配置：
+#   LLM_PROVIDER=dashscope         # 生产环境用 dashscope，开发环境可用 openai-compat
 #   DASHSCOPE_API_KEY=xxx          # 阿里云百炼 API Key
 #   QWEATHER_API_KEY=xxx           # 和风天气 API Key
 #   QWEATHER_API_HOST=xxx          # 和风天气项目 Host
+#   # 如使用 openai-compat（开发环境免费 API）：
+#   # OPENAI_COMPAT_BASE_URL=http://openai.infly.tech/v1/
+#   # OPENAI_COMPAT_API_KEY=xxx
+#   # OPENAI_COMPAT_MODEL=gpt-4o
+#   # OPENAI_COMPAT_VISION_MODEL=gpt-4o
 
 # 初始化数据库
 npx prisma db push
