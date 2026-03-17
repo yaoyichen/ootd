@@ -77,8 +77,8 @@ function Picker({
                 onClick={() => { onSelect(item.id); onClose(); }}
                 className="rounded-2xl overflow-hidden transition-all duration-200"
                 style={{
-                  border: selected === item.id ? "2px solid #FF9500" : "2px solid transparent",
-                  boxShadow: selected === item.id ? "0 0 0 2px rgba(255,149,0,0.2)" : "none",
+                  border: selected === item.id ? "2px solid #F27C88" : "2px solid transparent",
+                  boxShadow: selected === item.id ? "0 0 0 2px rgba(242,124,136,0.2)" : "none",
                 }}
               >
                 <div className="relative" style={{ aspectRatio: "3/4" }}>
@@ -87,7 +87,7 @@ function Picker({
                 <div className="p-2">
                   <p className="text-xs font-medium truncate" style={{ color: "#1D1D1F" }}>{item.name}</p>
                   {item.tag && (
-                    <span className="text-[10px]" style={{ color: "#FF9500" }}>{item.tag}</span>
+                    <span className="text-[10px]" style={{ color: "#F27C88" }}>{item.tag}</span>
                   )}
                 </div>
               </button>
@@ -120,8 +120,8 @@ function SelectCard({
         className="glass relative rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02]"
         style={{ aspectRatio: "3/4" }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.boxShadow = "0 8px 32px rgba(255,149,0,0.1)";
-          e.currentTarget.style.borderColor = "rgba(255,149,0,0.2)";
+          e.currentTarget.style.boxShadow = "0 8px 32px rgba(242,124,136,0.1)";
+          e.currentTarget.style.borderColor = "rgba(242,124,136,0.2)";
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.boxShadow = "0 2px 20px rgba(0,0,0,0.04)";
@@ -134,7 +134,7 @@ function SelectCard({
             <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/40 to-transparent" />
             <span
               className="absolute bottom-2 left-2 text-[10px] font-medium px-2 py-0.5 rounded-full"
-              style={{ color: "#fff", background: "rgba(255,149,0,0.7)" }}
+              style={{ color: "#fff", background: "rgba(242,124,136,0.7)" }}
             >
               {selectedName}
             </span>
@@ -143,9 +143,9 @@ function SelectCard({
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center"
-              style={{ background: "rgba(255,149,0,0.08)" }}
+              style={{ background: "rgba(242,124,136,0.08)" }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: "#FF9500" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: "#F27C88" }}>
                 <path d="M12 5v14m-7-7h14" />
               </svg>
             </div>
@@ -336,12 +336,12 @@ export default function TryonPage() {
   const bottomData = getItem(selectedBottom);
 
   return (
-    <div className="relative min-h-screen" style={{ background: "#FEFCF8" }}>
+    <div className="relative min-h-screen" style={{ background: "#FFF8F6" }}>
       <div
         className="pointer-events-none fixed rounded-full"
         style={{
           top: "-15%", right: "-8%", width: 700, height: 700,
-          background: "radial-gradient(circle, rgba(255,149,0,0.18), transparent 70%)",
+          background: "radial-gradient(circle, rgba(242,124,136,0.18), transparent 70%)",
           filter: "blur(80px)",
         }}
       />
@@ -349,7 +349,7 @@ export default function TryonPage() {
         className="pointer-events-none fixed rounded-full"
         style={{
           bottom: "-10%", left: "-5%", width: 550, height: 550,
-          background: "radial-gradient(circle, rgba(255,204,0,0.15), transparent 70%)",
+          background: "radial-gradient(circle, rgba(168,130,214,0.12), transparent 70%)",
           filter: "blur(80px)",
         }}
       />
@@ -396,7 +396,7 @@ export default function TryonPage() {
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight" style={{ color: "#1D1D1F" }}>
             <span
               style={{
-                background: "linear-gradient(135deg, #FF9500, #FFCC00)",
+                background: "linear-gradient(135deg, #F27C88, #FACDD0)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}
@@ -441,9 +441,9 @@ export default function TryonPage() {
                 <div
                   className="flex-1 py-3 rounded-full text-sm font-medium text-center"
                   style={{
-                    background: "rgba(255,149,0,0.08)",
-                    color: "#FF9500",
-                    border: "1px solid rgba(255,149,0,0.15)",
+                    background: "rgba(242,124,136,0.08)",
+                    color: "#F27C88",
+                    border: "1px solid rgba(242,124,136,0.15)",
                   }}
                 >
                   已有穿搭记录
@@ -453,11 +453,11 @@ export default function TryonPage() {
                   disabled={isProcessing}
                   className="px-6 py-3 rounded-full text-sm font-semibold text-white transition-all"
                   style={{
-                    background: "linear-gradient(135deg, #FF9500, #FFCC00)",
-                    boxShadow: "0 4px 16px rgba(255,149,0,0.25)",
+                    background: "linear-gradient(135deg, #F27C88, #FACDD0)",
+                    boxShadow: "0 4px 16px rgba(242,124,136,0.25)",
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 24px rgba(255,149,0,0.35)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 16px rgba(255,149,0,0.25)"; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 24px rgba(242,124,136,0.35)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 16px rgba(242,124,136,0.25)"; }}
                 >
                   重新生成
                 </button>
@@ -499,7 +499,7 @@ export default function TryonPage() {
               <div className="glass rounded-2xl p-5 text-center">
                 <p className="text-sm" style={{ color: "#6E6E73" }}>
                   还没有人像，请先到
-                  <a href="/persons" className="font-semibold" style={{ color: "#FF9500" }}> 人像管理 </a>
+                  <a href="/persons" className="font-semibold" style={{ color: "#F27C88" }}> 人像管理 </a>
                   上传
                 </p>
               </div>
@@ -508,7 +508,7 @@ export default function TryonPage() {
               <div className="glass rounded-2xl p-5 text-center">
                 <p className="text-sm" style={{ color: "#6E6E73" }}>
                   衣橱是空的，请先到
-                  <a href="/wardrobe/add" className="font-semibold" style={{ color: "#FF9500" }}> 添加单品 </a>
+                  <a href="/wardrobe/add" className="font-semibold" style={{ color: "#F27C88" }}> 添加单品 </a>
                 </p>
               </div>
             )}
@@ -557,8 +557,8 @@ export default function TryonPage() {
                       rel="noopener noreferrer"
                       className="px-5 py-2 rounded-full text-xs font-semibold text-white transition-all"
                       style={{
-                        background: "linear-gradient(135deg, #FF9500, #FFCC00)",
-                        boxShadow: "0 4px 16px rgba(255,149,0,0.3)",
+                        background: "linear-gradient(135deg, #F27C88, #FACDD0)",
+                        boxShadow: "0 4px 16px rgba(242,124,136,0.3)",
                       }}
                     >
                       下载图片
@@ -585,11 +585,11 @@ export default function TryonPage() {
                         <svg className="w-12 h-12" viewBox="0 0 48 48" style={{ animation: "spin 1s linear infinite" }}>
                           <defs>
                             <linearGradient id="sg" x1="0%" y1="0%" x2="100%" y2="100%">
-                              <stop offset="0%" stopColor="#FF9500" />
-                              <stop offset="100%" stopColor="#FFCC00" />
+                              <stop offset="0%" stopColor="#F27C88" />
+                              <stop offset="100%" stopColor="#FACDD0" />
                             </linearGradient>
                           </defs>
-                          <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,149,0,0.12)" strokeWidth="3" />
+                          <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(242,124,136,0.12)" strokeWidth="3" />
                           <circle cx="24" cy="24" r="20" fill="none" stroke="url(#sg)" strokeWidth="3" strokeLinecap="round" strokeDasharray="90 126" />
                         </svg>
                       </div>
@@ -601,9 +601,9 @@ export default function TryonPage() {
                     <>
                       <div
                         className="w-16 h-16 rounded-3xl flex items-center justify-center"
-                        style={{ background: "rgba(255,149,0,0.08)" }}
+                        style={{ background: "rgba(242,124,136,0.08)" }}
                       >
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" strokeWidth="1" strokeLinecap="round" style={{ stroke: "#FF9500" }}>
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" strokeWidth="1" strokeLinecap="round" style={{ stroke: "#F27C88" }}>
                           <rect x="3" y="3" width="18" height="18" rx="4" />
                           <circle cx="12" cy="9" r="3" />
                           <path d="M6 21v-1a6 6 0 0 1 12 0v1" />
@@ -630,7 +630,7 @@ export default function TryonPage() {
                           <circle cx={28} cy={28} r={24} fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth={4} />
                           <circle
                             cx={28} cy={28} r={24} fill="none"
-                            stroke={score >= 80 ? "#34C759" : score >= 60 ? "#FF9500" : "#FF3B30"}
+                            stroke={score >= 80 ? "#34C759" : score >= 60 ? "#F27C88" : "#FF3B30"}
                             strokeWidth={4} strokeLinecap="round"
                             strokeDasharray={2 * Math.PI * 24}
                             strokeDashoffset={2 * Math.PI * 24 * (1 - score / 100)}
@@ -639,7 +639,7 @@ export default function TryonPage() {
                         </svg>
                         <span
                           className="absolute text-sm font-bold"
-                          style={{ color: score >= 80 ? "#34C759" : score >= 60 ? "#FF9500" : "#FF3B30" }}
+                          style={{ color: score >= 80 ? "#34C759" : score >= 60 ? "#F27C88" : "#FF3B30" }}
                         >
                           {score}
                         </span>
@@ -658,21 +658,21 @@ export default function TryonPage() {
                     disabled={scoring}
                     className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-colors"
                     style={{
-                      color: "#FF9500",
-                      background: "rgba(255,149,0,0.06)",
+                      color: "#F27C88",
+                      background: "rgba(242,124,136,0.06)",
                     }}
                   >
                     {scoring ? (
                       <>
                         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" style={{ animation: "spin 1s linear infinite" }}>
-                          <circle cx="12" cy="12" r="10" stroke="rgba(255,149,0,0.2)" strokeWidth="2.5" fill="none" />
-                          <path d="M12 2a10 10 0 0 1 10 10" stroke="#FF9500" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+                          <circle cx="12" cy="12" r="10" stroke="rgba(242,124,136,0.2)" strokeWidth="2.5" fill="none" />
+                          <path d="M12 2a10 10 0 0 1 10 10" stroke="#F27C88" strokeWidth="2.5" strokeLinecap="round" fill="none" />
                         </svg>
                         AI 评分中...
                       </>
                     ) : (
                       <>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF9500" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F27C88" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z" />
                         </svg>
                         AI 评分

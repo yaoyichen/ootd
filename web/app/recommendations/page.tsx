@@ -163,8 +163,8 @@ function PersonPicker({
                 onClick={() => { onSelect(p.id); onClose(); }}
                 className="rounded-2xl overflow-hidden transition-all duration-200"
                 style={{
-                  border: selected === p.id ? "2px solid #FF9500" : "2px solid transparent",
-                  boxShadow: selected === p.id ? "0 0 0 2px rgba(255,149,0,0.2)" : "none",
+                  border: selected === p.id ? "2px solid #F27C88" : "2px solid transparent",
+                  boxShadow: selected === p.id ? "0 0 0 2px rgba(242,124,136,0.2)" : "none",
                 }}
               >
                 <div className="relative" style={{ aspectRatio: "3/4" }}>
@@ -173,7 +173,7 @@ function PersonPicker({
                 <div className="p-2">
                   <p className="text-xs font-medium truncate" style={{ color: "#1D1D1F" }}>{p.name}</p>
                   {p.isDefault && (
-                    <span className="text-[10px]" style={{ color: "#FF9500" }}>默认</span>
+                    <span className="text-[10px]" style={{ color: "#F27C88" }}>默认</span>
                   )}
                 </div>
               </button>
@@ -252,9 +252,9 @@ function WeatherCard({
             onClick={() => setOpen(!open)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
             style={{
-              background: "rgba(255,149,0,0.08)",
-              color: "#FF9500",
-              border: "1px solid rgba(255,149,0,0.15)",
+              background: "rgba(242,124,136,0.08)",
+              color: "#F27C88",
+              border: "1px solid rgba(242,124,136,0.15)",
             }}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -326,7 +326,7 @@ function WeatherCard({
                       }}
                       className="w-full text-left px-3.5 py-2 text-xs transition-colors hover:bg-black/[0.03]"
                       style={{
-                        color: c.id === cityId ? "#FF9500" : "#1D1D1F",
+                        color: c.id === cityId ? "#F27C88" : "#1D1D1F",
                         fontWeight: c.id === cityId ? 600 : 400,
                       }}
                     >
@@ -355,9 +355,9 @@ function WeatherCard({
                 style={{
                   color: active ? "#fff" : "#6E6E73",
                   background: active
-                    ? "linear-gradient(135deg, #FF9500, #FFCC00)"
+                    ? "linear-gradient(135deg, #F27C88, #FACDD0)"
                     : "transparent",
-                  boxShadow: active ? "0 2px 8px rgba(255,149,0,0.25)" : "none",
+                  boxShadow: active ? "0 2px 8px rgba(242,124,136,0.25)" : "none",
                 }}
               >
                 <span className="text-[11px] font-semibold leading-tight">{f.dayLabel}</span>
@@ -379,8 +379,8 @@ function WeatherCard({
           <div
             className="w-4 h-4 rounded-full"
             style={{
-              border: "2px solid rgba(255,149,0,0.15)",
-              borderTopColor: "#FF9500",
+              border: "2px solid rgba(242,124,136,0.15)",
+              borderTopColor: "#F27C88",
               animation: "spin 0.8s linear infinite",
             }}
           />
@@ -450,9 +450,9 @@ function WeatherCard({
       {clothingAdvice && (
         <div
           className="mt-3 px-3 py-2 rounded-xl text-xs leading-relaxed"
-          style={{ background: "rgba(255,149,0,0.04)", color: "#6E6E73" }}
+          style={{ background: "rgba(242,124,136,0.04)", color: "#6E6E73" }}
         >
-          <span style={{ color: "#FF9500" }}>
+          <span style={{ color: "#F27C88" }}>
             {forecast?.dayLabel === "今天" ? "👔 今日穿衣建议：" : `👔 ${forecast?.dayLabel}穿衣建议：`}
           </span>
           {clothingAdvice}
@@ -506,7 +506,7 @@ function RadarChart({
 
   const displayScore = hovered !== null ? dims[DIM_LABELS[hovered].key] : score;
   const scoreColor =
-    displayScore >= 80 ? "#34C759" : displayScore >= 60 ? "#FF9500" : "#FF3B30";
+    displayScore >= 80 ? "#34C759" : displayScore >= 60 ? "#F27C88" : "#FF3B30";
 
   return (
     <div
@@ -534,7 +534,7 @@ function RadarChart({
               y1={cy}
               x2={ex}
               y2={ey}
-              stroke={active ? "#FF9500" : "rgba(0,0,0,0.04)"}
+              stroke={active ? "#F27C88" : "rgba(0,0,0,0.04)"}
               strokeWidth={active ? 1.5 : 0.5}
               style={{ transition: "stroke 0.2s, stroke-width 0.2s" }}
             />
@@ -542,8 +542,8 @@ function RadarChart({
         })}
         <polygon
           points={dataPath}
-          fill="rgba(255,149,0,0.12)"
-          stroke="#FF9500"
+          fill="rgba(242,124,136,0.12)"
+          stroke="#F27C88"
           strokeWidth={1.5}
           strokeLinejoin="round"
         />
@@ -555,7 +555,7 @@ function RadarChart({
               cx={p[0]}
               cy={p[1]}
               r={active ? 5 : 2.5}
-              fill={active ? "#FF9500" : "#FF9500"}
+              fill={active ? "#F27C88" : "#F27C88"}
               stroke={active ? "white" : "none"}
               strokeWidth={active ? 2 : 0}
               style={{ transition: "r 0.2s" }}
@@ -578,7 +578,7 @@ function RadarChart({
               dominantBaseline="central"
               fontSize={active ? 11 : 10}
               fontWeight={active ? 700 : 500}
-              fill={active ? "#FF9500" : "#6E6E73"}
+              fill={active ? "#F27C88" : "#6E6E73"}
               style={{ transition: "fill 0.2s, font-size 0.2s", cursor: "default" }}
             >
               {label}
@@ -641,8 +641,8 @@ function RecommendationCard({
         <div
           className="absolute top-3 left-3 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
           style={{
-            background: "linear-gradient(135deg, #FF9500, #FFCC00)",
-            boxShadow: "0 2px 8px rgba(255,149,0,0.3)",
+            background: "linear-gradient(135deg, #F27C88, #FACDD0)",
+            boxShadow: "0 2px 8px rgba(242,124,136,0.3)",
           }}
         >
           {rec.rank}
@@ -706,7 +706,7 @@ function RecommendationCard({
           {rec.topItem && (
             <span
               className="text-[10px] font-medium px-2 py-0.5 rounded-full"
-              style={{ color: "#FF9500", background: "rgba(255,149,0,0.08)" }}
+              style={{ color: "#F27C88", background: "rgba(242,124,136,0.08)" }}
             >
               {rec.topItem.name}
             </span>
@@ -715,7 +715,7 @@ function RecommendationCard({
           {rec.bottomItem && (
             <span
               className="text-[10px] font-medium px-2 py-0.5 rounded-full"
-              style={{ color: "#FF9500", background: "rgba(255,149,0,0.08)" }}
+              style={{ color: "#F27C88", background: "rgba(242,124,136,0.08)" }}
             >
               {rec.bottomItem.name}
             </span>
@@ -1056,7 +1056,7 @@ export default function RecommendationsPage() {
             : 0;
 
   return (
-    <div className="relative min-h-screen" style={{ background: "#FEFCF8" }}>
+    <div className="relative min-h-screen" style={{ background: "#FFF8F6" }}>
       <div
         className="pointer-events-none fixed rounded-full"
         style={{
@@ -1065,7 +1065,7 @@ export default function RecommendationsPage() {
           width: 700,
           height: 700,
           background:
-            "radial-gradient(circle, rgba(255,149,0,0.12), transparent 70%)",
+            "radial-gradient(circle, rgba(242,124,136,0.12), transparent 70%)",
           filter: "blur(80px)",
         }}
       />
@@ -1107,8 +1107,8 @@ export default function RecommendationsPage() {
                   <div
                     className="w-8 h-8 rounded-full"
                     style={{
-                      border: "3px solid rgba(255,149,0,0.15)",
-                      borderTopColor: "#FF9500",
+                      border: "3px solid rgba(242,124,136,0.15)",
+                      borderTopColor: "#F27C88",
                       animation: "spin 0.8s linear infinite",
                     }}
                   />
@@ -1140,8 +1140,8 @@ export default function RecommendationsPage() {
                           <div
                             className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
                             style={{
-                              background: "linear-gradient(135deg, #FF9500, #FFCC00)",
-                              boxShadow: "0 2px 6px rgba(255,149,0,0.3)",
+                              background: "linear-gradient(135deg, #F27C88, #FACDD0)",
+                              boxShadow: "0 2px 6px rgba(242,124,136,0.3)",
                             }}
                           >
                             {rec.score}分
@@ -1187,7 +1187,7 @@ export default function RecommendationsPage() {
                       <div className="p-2.5">
                         <div className="flex items-center gap-1 flex-wrap">
                           {rec.topItem && (
-                            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ color: "#FF9500", background: "rgba(255,149,0,0.08)" }}>
+                            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ color: "#F27C88", background: "rgba(242,124,136,0.08)" }}>
                               {rec.topItem.name}
                             </span>
                           )}
@@ -1195,7 +1195,7 @@ export default function RecommendationsPage() {
                             <span className="text-[9px]" style={{ color: "#AEAEB2" }}>+</span>
                           )}
                           {rec.bottomItem && (
-                            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ color: "#FF9500", background: "rgba(255,149,0,0.08)" }}>
+                            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ color: "#F27C88", background: "rgba(242,124,136,0.08)" }}>
                               {rec.bottomItem.name}
                             </span>
                           )}
@@ -1227,9 +1227,9 @@ export default function RecommendationsPage() {
                   style={{
                     background: quickRemaining === 0
                       ? "rgba(0,0,0,0.04)"
-                      : "linear-gradient(135deg, #FF9500, #FFCC00)",
+                      : "linear-gradient(135deg, #F27C88, #FACDD0)",
                     color: quickRemaining === 0 ? "#AEAEB2" : "#fff",
-                    boxShadow: quickRemaining === 0 ? "none" : "0 4px 16px rgba(255,149,0,0.25)",
+                    boxShadow: quickRemaining === 0 ? "none" : "0 4px 16px rgba(242,124,136,0.25)",
                     opacity: quickLoading ? 0.7 : 1,
                   }}
                 >
@@ -1264,7 +1264,7 @@ export default function RecommendationsPage() {
           >
             <span
               style={{
-                background: "linear-gradient(135deg, #FF9500, #FFCC00)",
+                background: "linear-gradient(135deg, #F27C88, #FACDD0)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}
@@ -1345,8 +1345,8 @@ export default function RecommendationsPage() {
                       x2="100%"
                       y2="100%"
                     >
-                      <stop offset="0%" stopColor="#FF9500" />
-                      <stop offset="100%" stopColor="#FFCC00" />
+                      <stop offset="0%" stopColor="#F27C88" />
+                      <stop offset="100%" stopColor="#FACDD0" />
                     </linearGradient>
                   </defs>
                   <circle
@@ -1354,7 +1354,7 @@ export default function RecommendationsPage() {
                     cy="28"
                     r="24"
                     fill="none"
-                    stroke="rgba(255,149,0,0.1)"
+                    stroke="rgba(242,124,136,0.1)"
                     strokeWidth="3"
                   />
                   <circle
@@ -1388,7 +1388,7 @@ export default function RecommendationsPage() {
                     style={{
                       width: `${progressPercent}%`,
                       background:
-                        "linear-gradient(90deg, #FF9500, #FFCC00)",
+                        "linear-gradient(90deg, #F27C88, #FACDD0)",
                     }}
                   />
                 </div>
@@ -1406,7 +1406,7 @@ export default function RecommendationsPage() {
                         key={label}
                         className="text-[10px] font-medium"
                         style={{
-                          color: active ? "#FF9500" : "#AEAEB2",
+                          color: active ? "#F27C88" : "#AEAEB2",
                         }}
                       >
                         {label}
@@ -1424,7 +1424,7 @@ export default function RecommendationsPage() {
           <div className="glass rounded-3xl p-10 flex flex-col items-center gap-6">
             <div
               className="w-20 h-20 rounded-3xl flex items-center justify-center"
-              style={{ background: "rgba(255,149,0,0.06)" }}
+              style={{ background: "rgba(242,124,136,0.06)" }}
             >
               <svg
                 width="36"
@@ -1434,7 +1434,7 @@ export default function RecommendationsPage() {
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                style={{ stroke: "#FF9500" }}
+                style={{ stroke: "#F27C88" }}
               >
                 <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z" />
               </svg>
@@ -1459,8 +1459,8 @@ export default function RecommendationsPage() {
                 href="/persons"
                 className="px-6 py-3 rounded-full text-sm font-semibold text-white"
                 style={{
-                  background: "linear-gradient(135deg, #FF9500, #FFCC00)",
-                  boxShadow: "0 4px 16px rgba(255,149,0,0.25)",
+                  background: "linear-gradient(135deg, #F27C88, #FACDD0)",
+                  boxShadow: "0 4px 16px rgba(242,124,136,0.25)",
                 }}
               >
                 先上传人像
@@ -1479,9 +1479,9 @@ export default function RecommendationsPage() {
                   disabled={!selectedPerson || quickLoading}
                   className="px-6 py-2.5 rounded-full text-sm font-medium transition-all"
                   style={{
-                    color: "#FF9500",
-                    background: "rgba(255,149,0,0.08)",
-                    border: "1px solid rgba(255,149,0,0.15)",
+                    color: "#F27C88",
+                    background: "rgba(242,124,136,0.08)",
+                    border: "1px solid rgba(242,124,136,0.15)",
                     opacity: quickLoading ? 0.7 : 1,
                   }}
                 >
@@ -1526,7 +1526,7 @@ export default function RecommendationsPage() {
               onClick={handleGenerate}
               className="px-6 py-2.5 rounded-full text-sm font-semibold text-white"
               style={{
-                background: "linear-gradient(135deg, #FF9500, #FFCC00)",
+                background: "linear-gradient(135deg, #F27C88, #FACDD0)",
               }}
             >
               重试
@@ -1554,9 +1554,9 @@ export default function RecommendationsPage() {
                 disabled={rescoring || isProcessing}
                 className="px-5 py-2.5 rounded-full text-sm font-medium transition-all"
                 style={{
-                  color: rescoring ? "#AEAEB2" : "#FF9500",
-                  background: "rgba(255,149,0,0.08)",
-                  border: "1px solid rgba(255,149,0,0.15)",
+                  color: rescoring ? "#AEAEB2" : "#F27C88",
+                  background: "rgba(242,124,136,0.08)",
+                  border: "1px solid rgba(242,124,136,0.15)",
                   opacity: rescoring ? 0.7 : 1,
                 }}
               >
@@ -1586,9 +1586,9 @@ export default function RecommendationsPage() {
                 disabled={quickLoading}
                 className="px-5 py-2.5 rounded-full text-sm font-medium transition-all"
                 style={{
-                  color: "#FF9500",
-                  background: "rgba(255,149,0,0.08)",
-                  border: "1px solid rgba(255,149,0,0.15)",
+                  color: "#F27C88",
+                  background: "rgba(242,124,136,0.08)",
+                  border: "1px solid rgba(242,124,136,0.15)",
                 }}
               >
                 随便穿穿
@@ -1603,8 +1603,8 @@ export default function RecommendationsPage() {
             <div
               className="w-8 h-8 rounded-full"
               style={{
-                border: "3px solid rgba(255,149,0,0.15)",
-                borderTopColor: "#FF9500",
+                border: "3px solid rgba(242,124,136,0.15)",
+                borderTopColor: "#F27C88",
                 animation: "spin 0.8s linear infinite",
               }}
             />

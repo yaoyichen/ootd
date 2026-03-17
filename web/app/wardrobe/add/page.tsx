@@ -255,12 +255,12 @@ function AddItemForm() {
   const canSave = !!preview && !!form.name && !saving;
 
   return (
-    <div className="relative min-h-screen" style={{ background: "#FEFCF8" }}>
+    <div className="relative min-h-screen" style={{ background: "#FFF8F6" }}>
       <div
         className="pointer-events-none fixed rounded-full"
         style={{
           top: "-15%", right: "-8%", width: 700, height: 700,
-          background: "radial-gradient(circle, rgba(255,149,0,0.12), transparent 70%)",
+          background: "radial-gradient(circle, rgba(242,124,136,0.12), transparent 70%)",
           filter: "blur(80px)",
         }}
       />
@@ -288,7 +288,7 @@ function AddItemForm() {
               style={{
                 color: inputMode === "upload" ? "#fff" : "#6E6E73",
                 background: inputMode === "upload"
-                  ? "linear-gradient(135deg, #FF9500, #FFCC00)"
+                  ? "linear-gradient(135deg, #F27C88, #FACDD0)"
                   : "rgba(0,0,0,0.04)",
               }}
             >
@@ -300,7 +300,7 @@ function AddItemForm() {
               style={{
                 color: inputMode === "taobao" ? "#fff" : "#6E6E73",
                 background: inputMode === "taobao"
-                  ? "linear-gradient(135deg, #FF9500, #FFCC00)"
+                  ? "linear-gradient(135deg, #F27C88, #FACDD0)"
                   : "rgba(0,0,0,0.04)",
               }}
             >
@@ -338,7 +338,7 @@ function AddItemForm() {
                   <Image src={processedPreview} alt="去背景" fill className="object-contain" />
                   <span
                     className="absolute bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-medium text-white whitespace-nowrap"
-                    style={{ background: "rgba(255,149,0,0.8)", backdropFilter: "blur(8px)" }}
+                    style={{ background: "rgba(242,124,136,0.8)", backdropFilter: "blur(8px)" }}
                   >
                     背景已去除
                   </span>
@@ -382,7 +382,7 @@ function AddItemForm() {
                     color: importing || !taobaoInput.trim() ? "#AEAEB2" : "#fff",
                     background: importing || !taobaoInput.trim()
                       ? "rgba(0,0,0,0.06)"
-                      : "linear-gradient(135deg, #FF9500, #FFCC00)",
+                      : "linear-gradient(135deg, #F27C88, #FACDD0)",
                   }}
                 >
                   {importing ? (
@@ -426,9 +426,9 @@ function AddItemForm() {
                 <div className="w-full h-full flex flex-col items-center justify-center gap-3">
                   <div
                     className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                    style={{ background: "rgba(255,149,0,0.08)" }}
+                    style={{ background: "rgba(242,124,136,0.08)" }}
                   >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: "#FF9500" }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: "#F27C88" }}>
                       <path d="M12 16V8m0 0-3 3m3-3 3 3" />
                       <path d="M3 15v1a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4v-1" />
                     </svg>
@@ -486,7 +486,7 @@ function AddItemForm() {
                       color: form.category === cat.value ? "#fff" : "#6E6E73",
                       background:
                         form.category === cat.value
-                          ? "linear-gradient(135deg, #FF9500, #FFCC00)"
+                          ? "linear-gradient(135deg, #F27C88, #FACDD0)"
                           : "rgba(0,0,0,0.04)",
                     }}
                   >
@@ -532,8 +532,8 @@ function AddItemForm() {
                     onClick={() => updateField("season", form.season === s ? "" : s)}
                     className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
                     style={{
-                      color: form.season === s ? "#FF9500" : "#6E6E73",
-                      background: form.season === s ? "rgba(255,149,0,0.1)" : "rgba(0,0,0,0.04)",
+                      color: form.season === s ? "#F27C88" : "#6E6E73",
+                      background: form.season === s ? "rgba(242,124,136,0.1)" : "rgba(0,0,0,0.04)",
                     }}
                   >
                     {s}
@@ -552,8 +552,8 @@ function AddItemForm() {
                     onClick={() => updateField("occasion", form.occasion === o ? "" : o)}
                     className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
                     style={{
-                      color: form.occasion === o ? "#FF9500" : "#6E6E73",
-                      background: form.occasion === o ? "rgba(255,149,0,0.1)" : "rgba(0,0,0,0.04)",
+                      color: form.occasion === o ? "#F27C88" : "#6E6E73",
+                      background: form.occasion === o ? "rgba(242,124,136,0.1)" : "rgba(0,0,0,0.04)",
                     }}
                   >
                     {o}
@@ -614,8 +614,8 @@ function AddItemForm() {
       {duplicateItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(6px)" }}>
           <div className="glass rounded-3xl p-6 mx-6 max-w-sm w-full flex flex-col items-center gap-4" style={{ background: "rgba(255,255,255,0.95)" }}>
-            <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(255,149,0,0.1)" }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF9500" strokeWidth="2" strokeLinecap="round">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(242,124,136,0.1)" }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F27C88" strokeWidth="2" strokeLinecap="round">
                 <circle cx="12" cy="12" r="10" />
                 <path d="M12 8v4m0 4h.01" />
               </svg>
@@ -646,7 +646,7 @@ function AddItemForm() {
               <button
                 onClick={() => { setDuplicateItem(null); doSave(); }}
                 className="flex-1 py-3 rounded-full text-sm font-medium text-white"
-                style={{ background: "linear-gradient(135deg, #FF9500, #FFCC00)" }}
+                style={{ background: "linear-gradient(135deg, #F27C88, #FACDD0)" }}
               >
                 仍然添加
               </button>

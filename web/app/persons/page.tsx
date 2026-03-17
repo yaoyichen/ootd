@@ -86,12 +86,12 @@ export default function PersonsPage() {
   };
 
   return (
-    <div className="relative min-h-screen" style={{ background: "#FEFCF8" }}>
+    <div className="relative min-h-screen" style={{ background: "#FFF8F6" }}>
       <div
         className="pointer-events-none fixed rounded-full"
         style={{
           top: "-15%", right: "-8%", width: 700, height: 700,
-          background: "radial-gradient(circle, rgba(255,149,0,0.12), transparent 70%)",
+          background: "radial-gradient(circle, rgba(242,124,136,0.12), transparent 70%)",
           filter: "blur(80px)",
         }}
       />
@@ -108,8 +108,8 @@ export default function PersonsPage() {
             onClick={() => inputRef.current?.click()}
             className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white"
             style={{
-              background: "linear-gradient(135deg, #FF9500, #FFCC00)",
-              boxShadow: "0 4px 16px rgba(255,149,0,0.25)",
+              background: "linear-gradient(135deg, #F27C88, #FACDD0)",
+              boxShadow: "0 4px 16px rgba(242,124,136,0.25)",
             }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
@@ -172,8 +172,8 @@ export default function PersonsPage() {
             <div
               className="w-8 h-8 rounded-full"
               style={{
-                border: "3px solid rgba(255,149,0,0.15)",
-                borderTopColor: "#FF9500",
+                border: "3px solid rgba(242,124,136,0.15)",
+                borderTopColor: "#F27C88",
                 animation: "spin 0.8s linear infinite",
               }}
             />
@@ -182,9 +182,9 @@ export default function PersonsPage() {
           <div className="flex flex-col items-center gap-4 py-20">
             <div
               className="w-20 h-20 rounded-3xl flex items-center justify-center"
-              style={{ background: "rgba(255,149,0,0.06)" }}
+              style={{ background: "rgba(242,124,136,0.06)" }}
             >
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" strokeWidth="1" strokeLinecap="round" style={{ stroke: "#FF9500" }}>
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" strokeWidth="1" strokeLinecap="round" style={{ stroke: "#F27C88" }}>
                 <circle cx="12" cy="8" r="4" />
                 <path d="M6 21v-2a6 6 0 0 1 12 0v2" />
               </svg>
@@ -200,7 +200,7 @@ export default function PersonsPage() {
                 key={p.id}
                 className="group glass rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02]"
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = "0 8px 32px rgba(255,149,0,0.1)";
+                  e.currentTarget.style.boxShadow = "0 8px 32px rgba(242,124,136,0.1)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.boxShadow = "0 2px 20px rgba(0,0,0,0.04)";
@@ -211,7 +211,7 @@ export default function PersonsPage() {
                   {p.isDefault && (
                     <div
                       className="absolute top-2 left-2 px-2 py-1 rounded-full text-[10px] font-semibold"
-                      style={{ background: "linear-gradient(135deg, #FF9500, #FFCC00)", color: "#fff" }}
+                      style={{ background: "linear-gradient(135deg, #F27C88, #FACDD0)", color: "#fff" }}
                     >
                       默认
                     </div>
@@ -221,7 +221,7 @@ export default function PersonsPage() {
                       <button
                         onClick={() => handleSetDefault(p.id)}
                         className="w-7 h-7 rounded-full flex items-center justify-center"
-                        style={{ background: "rgba(255,149,0,0.85)", color: "#fff" }}
+                        style={{ background: "rgba(242,124,136,0.85)", color: "#fff" }}
                         title="设为默认"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">

@@ -135,12 +135,12 @@ export default function FavoritesPage() {
   };
 
   return (
-    <div className="relative min-h-screen" style={{ background: "#FEFCF8" }}>
+    <div className="relative min-h-screen" style={{ background: "#FFF8F6" }}>
       <div
         className="pointer-events-none fixed rounded-full"
         style={{
           top: "-15%", right: "-8%", width: 700, height: 700,
-          background: "radial-gradient(circle, rgba(255,149,0,0.18), transparent 70%)",
+          background: "radial-gradient(circle, rgba(242,124,136,0.18), transparent 70%)",
           filter: "blur(80px)",
         }}
       />
@@ -177,7 +177,7 @@ export default function FavoritesPage() {
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight" style={{ color: "#1D1D1F" }}>
             <span
               style={{
-                background: "linear-gradient(135deg, #FF9500, #FFCC00)",
+                background: "linear-gradient(135deg, #F27C88, #FACDD0)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}
@@ -195,11 +195,11 @@ export default function FavoritesPage() {
             <svg className="w-8 h-8" viewBox="0 0 48 48" style={{ animation: "spin 1s linear infinite" }}>
               <defs>
                 <linearGradient id="fsg" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#FF9500" />
-                  <stop offset="100%" stopColor="#FFCC00" />
+                  <stop offset="0%" stopColor="#F27C88" />
+                  <stop offset="100%" stopColor="#FACDD0" />
                 </linearGradient>
               </defs>
-              <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,149,0,0.12)" strokeWidth="3" />
+              <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(242,124,136,0.12)" strokeWidth="3" />
               <circle cx="24" cy="24" r="20" fill="none" stroke="url(#fsg)" strokeWidth="3" strokeLinecap="round" strokeDasharray="90 126" />
             </svg>
           </div>
@@ -207,16 +207,16 @@ export default function FavoritesPage() {
           <div className="glass rounded-3xl p-16 text-center">
             <div
               className="w-20 h-20 rounded-3xl mx-auto mb-5 flex items-center justify-center"
-              style={{ background: "rgba(255,149,0,0.08)" }}
+              style={{ background: "rgba(242,124,136,0.08)" }}
             >
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#FF9500" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F27C88" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
               </svg>
             </div>
             <p className="text-base font-medium" style={{ color: "#1D1D1F" }}>还没有收藏的穿搭</p>
             <p className="text-sm mt-2" style={{ color: "#AEAEB2" }}>
               前往
-              <a href="/tryon" className="font-semibold" style={{ color: "#FF9500" }}> 试穿 </a>
+              <a href="/tryon" className="font-semibold" style={{ color: "#F27C88" }}> 试穿 </a>
               生成穿搭并点击收藏
             </p>
           </div>
@@ -236,8 +236,8 @@ export default function FavoritesPage() {
                   className="glass rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.01]"
                   style={{ border: "1px solid rgba(0,0,0,0.06)" }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.boxShadow = "0 12px 40px rgba(255,149,0,0.1)";
-                    e.currentTarget.style.borderColor = "rgba(255,149,0,0.15)";
+                    e.currentTarget.style.boxShadow = "0 12px 40px rgba(242,124,136,0.1)";
+                    e.currentTarget.style.borderColor = "rgba(242,124,136,0.15)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.boxShadow = "0 2px 20px rgba(0,0,0,0.04)";
@@ -279,7 +279,7 @@ export default function FavoritesPage() {
                       {person && (
                         <button
                           onClick={() => setLightbox(person.imagePath)}
-                          className="relative w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-orange-300 transition-all"
+                          className="relative w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-pink-300 transition-all"
                           title={person.name}
                         >
                           <Image src={person.imagePath} alt={person.name} fill className="object-cover" />
@@ -288,7 +288,7 @@ export default function FavoritesPage() {
                       {top && (
                         <button
                           onClick={() => setLightbox(top.imagePath)}
-                          className="relative w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-orange-300 transition-all"
+                          className="relative w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-pink-300 transition-all"
                           title={top.name}
                         >
                           <Image src={top.imagePath} alt={top.name} fill className="object-cover" />
@@ -297,7 +297,7 @@ export default function FavoritesPage() {
                       {bottom && (
                         <button
                           onClick={() => setLightbox(bottom.imagePath)}
-                          className="relative w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-orange-300 transition-all"
+                          className="relative w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-pink-300 transition-all"
                           title={bottom.name}
                         >
                           <Image src={bottom.imagePath} alt={bottom.name} fill className="object-cover" />
@@ -326,9 +326,9 @@ export default function FavoritesPage() {
                         download={`ootd-${outfit.id}.png`}
                         className="flex-1 py-2 rounded-full text-xs font-medium text-center transition-colors"
                         style={{
-                          background: "rgba(255,149,0,0.08)",
-                          color: "#FF9500",
-                          border: "1px solid rgba(255,149,0,0.12)",
+                          background: "rgba(242,124,136,0.08)",
+                          color: "#F27C88",
+                          border: "1px solid rgba(242,124,136,0.12)",
                         }}
                       >
                         下载
@@ -339,17 +339,17 @@ export default function FavoritesPage() {
                         className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-colors"
                         style={{
                           background: scoring.has(outfit.id)
-                            ? "rgba(255,149,0,0.12)"
-                            : "rgba(255,149,0,0.06)",
+                            ? "rgba(242,124,136,0.12)"
+                            : "rgba(242,124,136,0.06)",
                         }}
                         title={outfit.score != null ? "重新打分" : "AI 打分"}
                       >
                         {scoring.has(outfit.id) ? (
                           <svg width="14" height="14" viewBox="0 0 24 24" style={{ animation: "spin 1s linear infinite" }}>
-                            <circle cx="12" cy="12" r="10" fill="none" stroke="#FF9500" strokeWidth="2" strokeDasharray="31 31" strokeLinecap="round" />
+                            <circle cx="12" cy="12" r="10" fill="none" stroke="#F27C88" strokeWidth="2" strokeDasharray="31 31" strokeLinecap="round" />
                           </svg>
                         ) : (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF9500" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F27C88" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M12 20V10" />
                             <path d="M18 20V4" />
                             <path d="M6 20v-4" />
@@ -422,7 +422,7 @@ function RadarChart({
 
   const displayScore = hovered !== null ? dims[DIM_LABELS[hovered].key] : score;
   const scoreColor =
-    displayScore >= 80 ? "#34C759" : displayScore >= 60 ? "#FF9500" : "#FF3B30";
+    displayScore >= 80 ? "#34C759" : displayScore >= 60 ? "#F27C88" : "#FF3B30";
 
   return (
     <div
@@ -450,7 +450,7 @@ function RadarChart({
               y1={cy}
               x2={ex}
               y2={ey}
-              stroke={active ? "#FF9500" : "rgba(0,0,0,0.04)"}
+              stroke={active ? "#F27C88" : "rgba(0,0,0,0.04)"}
               strokeWidth={active ? 1.5 : 0.5}
               style={{ transition: "stroke 0.2s, stroke-width 0.2s" }}
             />
@@ -458,8 +458,8 @@ function RadarChart({
         })}
         <polygon
           points={dataPath}
-          fill="rgba(255,149,0,0.12)"
-          stroke="#FF9500"
+          fill="rgba(242,124,136,0.12)"
+          stroke="#F27C88"
           strokeWidth={1.5}
           strokeLinejoin="round"
         />
@@ -471,7 +471,7 @@ function RadarChart({
               cx={p[0]}
               cy={p[1]}
               r={active ? 4 : 2}
-              fill="#FF9500"
+              fill="#F27C88"
               stroke={active ? "white" : "none"}
               strokeWidth={active ? 2 : 0}
               style={{ transition: "r 0.2s" }}
@@ -494,7 +494,7 @@ function RadarChart({
               dominantBaseline="central"
               fontSize={active ? 10 : 9}
               fontWeight={active ? 700 : 500}
-              fill={active ? "#FF9500" : "#6E6E73"}
+              fill={active ? "#F27C88" : "#6E6E73"}
               style={{ transition: "fill 0.2s, font-size 0.2s", cursor: "default" }}
             >
               {label}

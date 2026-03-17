@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: #FEFCF8;
+  --color-background: #FFF8F6;
   --color-foreground: #1D1D1F;
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --color-accent: #FF9500;
-  --color-accent-end: #FFCC00;
-  --color-accent-hover: #E8850A;
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --color-accent: #F27C88;
+  --color-accent-end: #FACDD0;
+  --color-accent-hover: #E8687A;
 }
 
 body {
-  background: #FEFCF8;
+  background: #FFF8F6;
   color: #1D1D1F;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -22,14 +22,14 @@ body {
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(242, 124, 136, 0.1);
   box-shadow: 0 2px 20px rgba(0, 0, 0, 0.04);
 }
 
 /* ── Gradient text ───────────────────────── */
 
 .gradient-text {
-  background: linear-gradient(135deg, #FF9500, #FFCC00);
+  background: linear-gradient(135deg, #F27C88, #FACDD0);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -39,17 +39,17 @@ body {
 /* ── Gradient button ─────────────────────── */
 
 .btn-gradient {
-  background: linear-gradient(135deg, #FF9500, #FFCC00) !important;
+  background: linear-gradient(135deg, #F27C88, #FACDD0) !important;
   color: #fff !important;
   position: relative;
   overflow: hidden;
   transition: transform 0.2s ease, box-shadow 0.3s ease;
-  box-shadow: 0 4px 20px rgba(255, 149, 0, 0.25);
+  box-shadow: 0 4px 20px rgba(242, 124, 136, 0.25);
 }
 
 .btn-gradient:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 28px rgba(255, 149, 0, 0.35);
+  box-shadow: 0 6px 28px rgba(242, 124, 136, 0.35);
 }
 
 .btn-gradient:active:not(:disabled) {
@@ -101,10 +101,10 @@ body {
 
 @keyframes pulseGlow {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(255, 149, 0, 0.35), 0 0 60px rgba(255, 204, 0, 0.30);
+    box-shadow: 0 0 20px rgba(242, 124, 136, 0.35), 0 0 60px rgba(250, 205, 208, 0.30);
   }
   50% {
-    box-shadow: 0 0 30px rgba(255, 149, 0, 0.45), 0 0 80px rgba(255, 204, 0, 0.40);
+    box-shadow: 0 0 30px rgba(242, 124, 136, 0.45), 0 0 80px rgba(250, 205, 208, 0.40);
   }
 }
 
@@ -114,10 +114,50 @@ body {
   }
 }
 
+@keyframes heartBeat {
+  0% { transform: scale(1); }
+  15% { transform: scale(1.3); }
+  30% { transform: scale(1); }
+  45% { transform: scale(1.2); }
+  60% { transform: scale(1); }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
 .animate-fade-in-up {
   animation: fadeInUp 0.5s ease-out both;
 }
 
 .animate-pulse-glow {
   animation: pulseGlow 2s ease-in-out infinite;
+}
+
+.animate-heart-beat {
+  animation: heartBeat 0.6s ease-in-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.5s ease-out both;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
 }
