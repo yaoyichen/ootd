@@ -83,6 +83,7 @@ ootd/
 | [数据库参考](docs/database.md) | 数据模型、API 路由、Prisma 用法 |
 | [试穿 API 调研](docs/tryon-api-research.md) | 虚拟试穿技术方案对比 |
 | [竞品分析](docs/competitive-analysis.md) | 穿搭类应用竞品分析 |
+| [部署方案](docs/deployment.md) | 阿里云 ECS 部署指南、运维、成本估算 |
 | [Web App 说明](web/README.md) | Web 子项目的详细开发文档 |
 
 ## 开发进度
