@@ -17,7 +17,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { personImageId, locationId } = body;
+    const { personImageId, locationId, targetDay = 0 } = body;
 
     if (!personImageId) {
       return new Response(JSON.stringify({ error: "personImageId is required" }), {
@@ -65,10 +65,13 @@ export async function POST(req: NextRequest) {
               send("progress", { step: "weather", message: "正在获取天气信息..." });
               const weatherData = await getWeatherData(locationId || DEFAULT_CITY_ID);
               const summary = toWeatherSummary(weatherData);
-              weatherContext = buildWeatherPromptContext(summary);
+              const dayOffset = Math.min(Math.max(targetDay, 0), 2);
+              weatherContext = buildWeatherPromptContext(summary, dayOffset);
+              const targetForecast = summary.forecasts[dayOffset];
+              const dayLabel = targetForecast?.dayLabel || "今天";
               send("progress", {
                 step: "weather_done",
-                message: `${summary.city} ${summary.weather} ${summary.temp}`,
+                message: `${summary.city} ${dayLabel} ${targetForecast?.weatherDay || summary.weather} ${targetForecast?.tempRange || summary.temp}`,
                 weather: summary,
               });
             } catch (err) {

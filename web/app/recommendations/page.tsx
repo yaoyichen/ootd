@@ -1,13 +1,28 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Image from "next/image";
+import ALL_CITIES from "@/lib/china-cities.json";
 
 interface CityOption {
   id: string;
   name: string;
   adm1: string;
   adm2: string;
+}
+
+interface ForecastSummary {
+  date: string;
+  dayLabel: string;
+  weekday: string;
+  dateShort: string;
+  tempRange: string;
+  tempMax: string;
+  tempMin: string;
+  weatherDay: string;
+  weatherNight: string;
+  iconDay: string;
+  clothingAdvice: string | null;
 }
 
 interface WeatherSummary {
@@ -19,6 +34,7 @@ interface WeatherSummary {
   wind: string;
   todayRange: string;
   clothingAdvice: string | null;
+  forecasts: ForecastSummary[];
 }
 
 const PRESET_CITIES: CityOption[] = [
@@ -48,6 +64,11 @@ const WEATHER_ICONS: Record<string, string> = {
 
 function getWeatherIcon(text: string): string {
   return WEATHER_ICONS[text] || "🌤️";
+}
+
+/** 中午 12 点前默认"今天"(0)，12 点后默认"明天"(1) */
+function getDefaultTargetDay(): number {
+  return new Date().getHours() >= 12 ? 1 : 0;
 }
 
 interface ItemInfo {
@@ -167,24 +188,66 @@ function PersonPicker({
 function WeatherCard({
   weather,
   cityId,
+  cityName,
+  targetDay,
   onCityChange,
+  onTargetDayChange,
   loading,
 }: {
   weather: WeatherSummary | null;
   cityId: string;
-  onCityChange: (id: string) => void;
+  cityName: string;
+  targetDay: number;
+  onCityChange: (id: string, name: string) => void;
+  onTargetDayChange: (day: number) => void;
   loading: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setQuery("");
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  // Focus input when dropdown opens
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }, [open]);
+
+  // Local filtering - instant, no API calls
+  const filteredCities = useMemo(() => {
+    const q = query.trim();
+    if (!q) return PRESET_CITIES;
+    return (ALL_CITIES as CityOption[]).filter(
+      (c) => c.name.includes(q) || c.adm1.includes(q) || c.adm2.includes(q)
+    ).slice(0, 20);
+  }, [query]);
+
+  const forecast = weather?.forecasts?.[targetDay];
+  const clothingAdvice = forecast?.clothingAdvice;
 
   return (
     <div
       className="glass rounded-2xl p-4 mb-6 transition-all duration-300"
       style={{ boxShadow: "0 1px 12px rgba(0,0,0,0.03)" }}
     >
-      <div className="flex items-center justify-between gap-3">
+      {/* Top row: city + day switcher */}
+      <div className="flex items-center justify-between gap-3 mb-3">
         {/* City dropdown */}
-        <div className="relative">
+        <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setOpen(!open)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
@@ -198,79 +261,201 @@ function WeatherCard({
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
               <circle cx="12" cy="10" r="3" />
             </svg>
-            {PRESET_CITIES.find((c) => c.id === cityId)?.name || "选择城市"}
+            {cityName || "选择城市"}
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <path d="M6 9l6 6 6-6" />
             </svg>
           </button>
           {open && (
             <div
-              className="absolute top-full left-0 mt-1.5 z-30 rounded-xl py-1 max-h-52 overflow-y-auto"
+              className="absolute top-full left-0 mt-1.5 z-30 rounded-xl overflow-hidden"
               style={{
                 background: "rgba(255,255,255,0.98)",
                 backdropFilter: "blur(20px)",
                 boxShadow: "0 4px 24px rgba(0,0,0,0.1)",
                 border: "1px solid rgba(0,0,0,0.06)",
-                minWidth: 120,
+                minWidth: 180,
               }}
             >
-              {PRESET_CITIES.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => { onCityChange(c.id); setOpen(false); }}
-                  className="w-full text-left px-3.5 py-2 text-xs transition-colors hover:bg-black/[0.03]"
-                  style={{
-                    color: c.id === cityId ? "#FF9500" : "#1D1D1F",
-                    fontWeight: c.id === cityId ? 600 : 400,
-                  }}
+              {/* Search input */}
+              <div className="px-3 pt-2.5 pb-1.5">
+                <div
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg"
+                  style={{ background: "rgba(0,0,0,0.04)" }}
                 >
-                  {c.name}
-                  <span className="ml-1" style={{ color: "#AEAEB2", fontSize: 10 }}>{c.adm1}</span>
-                </button>
-              ))}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#AEAEB2" strokeWidth="2" strokeLinecap="round">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="M21 21l-4.35-4.35" />
+                  </svg>
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="搜索城市..."
+                    className="flex-1 bg-transparent text-xs outline-none placeholder:text-[#AEAEB2]"
+                    style={{ color: "#1D1D1F" }}
+                  />
+                  {query && (
+                    <button
+                      onClick={() => { setQuery(""); inputRef.current?.focus(); }}
+                      className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ background: "rgba(0,0,0,0.1)" }}
+                    >
+                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" strokeWidth="3" strokeLinecap="round">
+                        <path d="M18 6 6 18M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+              {/* City list */}
+              <div className="max-h-48 overflow-y-auto py-1">
+                {filteredCities.length === 0 ? (
+                  <div className="px-3.5 py-3 text-xs text-center" style={{ color: "#AEAEB2" }}>
+                    未找到匹配城市
+                  </div>
+                ) : (
+                  filteredCities.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => {
+                        onCityChange(c.id, c.name);
+                        setOpen(false);
+                        setQuery("");
+                      }}
+                      className="w-full text-left px-3.5 py-2 text-xs transition-colors hover:bg-black/[0.03]"
+                      style={{
+                        color: c.id === cityId ? "#FF9500" : "#1D1D1F",
+                        fontWeight: c.id === cityId ? 600 : 400,
+                      }}
+                    >
+                      {c.name}
+                      <span className="ml-1" style={{ color: "#AEAEB2", fontSize: 10 }}>{c.adm1}</span>
+                    </button>
+                  ))
+                )}
+              </div>
             </div>
           )}
         </div>
 
-        {/* Weather info */}
-        {loading ? (
-          <div className="flex items-center gap-2">
-            <div
-              className="w-4 h-4 rounded-full"
-              style={{
-                border: "2px solid rgba(255,149,0,0.15)",
-                borderTopColor: "#FF9500",
-                animation: "spin 0.8s linear infinite",
-              }}
-            />
-            <span className="text-xs" style={{ color: "#AEAEB2" }}>获取天气中...</span>
-          </div>
-        ) : weather ? (
-          <div className="flex items-center gap-3 flex-1 justify-end">
-            <span className="text-xl leading-none">{getWeatherIcon(weather.weather)}</span>
-            <div className="text-right">
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-lg font-bold" style={{ color: "#1D1D1F" }}>{weather.temp}</span>
-                <span className="text-[10px]" style={{ color: "#AEAEB2" }}>{weather.todayRange}</span>
-              </div>
-              <p className="text-[10px]" style={{ color: "#6E6E73" }}>
-                {weather.weather} · 体感 {weather.feelsLike} · {weather.wind}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <span className="text-xs" style={{ color: "#AEAEB2" }}>天气数据暂不可用</span>
-        )}
+        {/* Day switcher tabs */}
+        <div
+          className="flex items-center rounded-xl p-0.5 gap-0.5"
+          style={{ background: "rgba(0,0,0,0.04)" }}
+        >
+          {(weather?.forecasts || []).map((f, i) => {
+            const active = i === targetDay;
+            return (
+              <button
+                key={f.date}
+                onClick={() => onTargetDayChange(i)}
+                className="relative flex flex-col items-center px-3 py-1 rounded-lg transition-all duration-200"
+                style={{
+                  color: active ? "#fff" : "#6E6E73",
+                  background: active
+                    ? "linear-gradient(135deg, #FF9500, #FFCC00)"
+                    : "transparent",
+                  boxShadow: active ? "0 2px 8px rgba(255,149,0,0.25)" : "none",
+                }}
+              >
+                <span className="text-[11px] font-semibold leading-tight">{f.dayLabel}</span>
+                <span
+                  className="text-[9px] leading-tight"
+                  style={{ opacity: active ? 0.85 : 0.6 }}
+                >
+                  {f.weekday} {f.dateShort}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
+      {/* Weather content */}
+      {loading ? (
+        <div className="flex items-center justify-center gap-2 py-3">
+          <div
+            className="w-4 h-4 rounded-full"
+            style={{
+              border: "2px solid rgba(255,149,0,0.15)",
+              borderTopColor: "#FF9500",
+              animation: "spin 0.8s linear infinite",
+            }}
+          />
+          <span className="text-xs" style={{ color: "#AEAEB2" }}>获取天气中...</span>
+        </div>
+      ) : forecast ? (
+        <div className="flex items-center gap-3">
+          <span className="text-3xl leading-none">{getWeatherIcon(forecast.weatherDay)}</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold tracking-tight" style={{ color: "#1D1D1F" }}>
+                {forecast.tempRange}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="text-xs" style={{ color: "#6E6E73" }}>
+                {forecast.weatherDay}{forecast.weatherDay !== forecast.weatherNight ? ` → ${forecast.weatherNight}` : ""}
+              </span>
+              {targetDay === 0 && weather && (
+                <>
+                  <span className="text-[10px]" style={{ color: "#AEAEB2" }}>·</span>
+                  <span className="text-[10px]" style={{ color: "#AEAEB2" }}>
+                    实时 {weather.temp}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+          {/* Mini forecast cards for the other days */}
+          <div className="flex gap-1.5">
+            {(weather?.forecasts || []).map((f, i) => {
+              if (i === targetDay) return null;
+              return (
+                <button
+                  key={f.date}
+                  onClick={() => onTargetDayChange(i)}
+                  className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg transition-all hover:bg-black/[0.03]"
+                >
+                  <span className="text-[10px] font-medium" style={{ color: "#AEAEB2" }}>{f.dayLabel}</span>
+                  <span className="text-sm leading-none">{getWeatherIcon(f.weatherDay)}</span>
+                  <span className="text-[10px] font-medium" style={{ color: "#6E6E73" }}>
+                    {f.tempMin}~{f.tempMax}°
+                  </span>
+                  <span className="text-[9px]" style={{ color: "#AEAEB2" }}>{f.weekday}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : weather ? (
+        <div className="flex items-center gap-3">
+          <span className="text-xl leading-none">{getWeatherIcon(weather.weather)}</span>
+          <div>
+            <span className="text-lg font-bold" style={{ color: "#1D1D1F" }}>{weather.temp}</span>
+            <p className="text-[10px]" style={{ color: "#6E6E73" }}>
+              {weather.weather} · 体感 {weather.feelsLike}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="py-2">
+          <span className="text-xs" style={{ color: "#AEAEB2" }}>天气数据暂不可用</span>
+        </div>
+      )}
+
       {/* Clothing advice */}
-      {weather?.clothingAdvice && (
+      {clothingAdvice && (
         <div
           className="mt-3 px-3 py-2 rounded-xl text-xs leading-relaxed"
           style={{ background: "rgba(255,149,0,0.04)", color: "#6E6E73" }}
         >
-          <span style={{ color: "#FF9500" }}>👔 穿衣建议：</span>
-          {weather.clothingAdvice}
+          <span style={{ color: "#FF9500" }}>
+            {forecast?.dayLabel === "今天" ? "👔 今日穿衣建议：" : `👔 ${forecast?.dayLabel}穿衣建议：`}
+          </span>
+          {clothingAdvice}
         </div>
       )}
     </div>
@@ -571,8 +756,12 @@ export default function RecommendationsPage() {
   const [showPersonPicker, setShowPersonPicker] = useState(false);
   const [rescoring, setRescoring] = useState(false);
   const [cityId, setCityId] = useState(DEFAULT_CITY_ID);
+  const [cityName, setCityName] = useState(
+    PRESET_CITIES.find((c) => c.id === DEFAULT_CITY_ID)?.name || "杭州"
+  );
   const [weather, setWeather] = useState<WeatherSummary | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
+  const [targetDay, setTargetDay] = useState(getDefaultTargetDay);
 
   const fetchWeather = useCallback(async (locId: string) => {
     setWeatherLoading(true);
@@ -595,8 +784,9 @@ export default function RecommendationsPage() {
     fetchWeather(cityId);
   }, [cityId, fetchWeather]);
 
-  const handleCityChange = (id: string) => {
+  const handleCityChange = (id: string, name: string) => {
     setCityId(id);
+    setCityName(name);
   };
 
   const handlePersonChange = (id: string) => {
@@ -654,7 +844,7 @@ export default function RecommendationsPage() {
       const res = await fetch("/api/recommendations/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ personImageId: selectedPerson, locationId: cityId }),
+        body: JSON.stringify({ personImageId: selectedPerson, locationId: cityId, targetDay }),
       });
 
       if (!res.ok) {
@@ -731,7 +921,7 @@ export default function RecommendationsPage() {
       setError(err instanceof Error ? err.message : "网络错误");
       setPhase("error");
     }
-  }, [selectedPerson, cityId]);
+  }, [selectedPerson, cityId, targetDay]);
 
   const handleToggleFavorite = async (outfitId: string) => {
     const rec = recommendations.find((r) => r.outfitId === outfitId);
@@ -834,12 +1024,14 @@ export default function RecommendationsPage() {
                 WebkitTextFillColor: "transparent",
               }}
             >
-              今日
+              {targetDay === 0 ? "今日" : targetDay === 1 ? "明日" : "后天"}
             </span>
             {" "}穿搭推荐
           </h1>
           <p className="mt-2 text-sm" style={{ color: "#6E6E73" }}>
-            AI 从你的衣橱中智能搭配，精选最佳方案
+            {targetDay === 0
+              ? "AI 从你的衣橱中智能搭配，精选最佳方案"
+              : `根据${targetDay === 1 ? "明天" : "后天"}天气预报，提前为你准备穿搭`}
           </p>
         </div>
 
@@ -847,7 +1039,10 @@ export default function RecommendationsPage() {
         <WeatherCard
           weather={weather}
           cityId={cityId}
+          cityName={cityName}
+          targetDay={targetDay}
           onCityChange={handleCityChange}
+          onTargetDayChange={setTargetDay}
           loading={weatherLoading}
         />
 
@@ -1005,10 +1200,12 @@ export default function RecommendationsPage() {
                 className="text-sm font-medium"
                 style={{ color: "#1D1D1F" }}
               >
-                今日还没有穿搭推荐
+                {targetDay === 0 ? "今日" : targetDay === 1 ? "明日" : "后天"}还没有穿搭推荐
               </p>
               <p className="text-xs mt-1" style={{ color: "#AEAEB2" }}>
-                AI 将从你的衣橱中智能匹配，生成 3 套最佳穿搭
+                {targetDay === 0
+                  ? "AI 将从你的衣橱中智能匹配，生成 3 套最佳穿搭"
+                  : `根据${targetDay === 1 ? "明天" : "后天"}天气预报，提前智能搭配 3 套穿搭`}
               </p>
             </div>
 
@@ -1029,7 +1226,7 @@ export default function RecommendationsPage() {
                 disabled={!selectedPerson}
                 className="btn-gradient px-8 py-3.5 rounded-full text-sm font-semibold tracking-wide"
               >
-                生成今日推荐
+                {targetDay === 0 ? "生成今日推荐" : targetDay === 1 ? "生成明日推荐" : "生成后天推荐"}
               </button>
             )}
           </div>

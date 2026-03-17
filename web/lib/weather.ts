@@ -26,6 +26,7 @@ export interface DailyForecast {
 }
 
 export interface ClothingIndex {
+  date: string;
   category: string;
   text: string;
 }
@@ -35,7 +36,21 @@ export interface WeatherData {
   locationId: string;
   now: WeatherNow;
   forecast: DailyForecast[];
-  clothing: ClothingIndex | null;
+  clothing3d: ClothingIndex[];
+}
+
+export interface ForecastSummary {
+  date: string;
+  dayLabel: string;
+  weekday: string;
+  dateShort: string;
+  tempRange: string;
+  tempMax: string;
+  tempMin: string;
+  weatherDay: string;
+  weatherNight: string;
+  iconDay: string;
+  clothingAdvice: string | null;
 }
 
 export interface WeatherSummary {
@@ -47,6 +62,7 @@ export interface WeatherSummary {
   wind: string;
   todayRange: string;
   clothingAdvice: string | null;
+  forecasts: ForecastSummary[];
 }
 
 export interface CityOption {
@@ -112,34 +128,74 @@ export async function getForecast3d(locationId: string): Promise<DailyForecast[]
   return data.daily || [];
 }
 
-export async function getClothingIndex(locationId: string): Promise<ClothingIndex | null> {
+export async function getClothingIndex3d(locationId: string): Promise<ClothingIndex[]> {
   try {
-    const data = await fetchQWeather(API_HOST, "/v7/indices/1d", {
+    const data = await fetchQWeather(API_HOST, "/v7/indices/3d", {
       location: locationId,
       type: "3",
       lang: "zh",
     });
-    return (data.daily || [])[0] || null;
+    return (data.daily || []).map((d: { date: string; category: string; text: string }) => ({
+      date: d.date,
+      category: d.category,
+      text: d.text,
+    }));
   } catch {
-    return null;
+    return [];
   }
 }
 
-export async function getWeatherData(locationId: string): Promise<WeatherData> {
+export async function getWeatherData(locationId: string, cityNameHint?: string): Promise<WeatherData> {
   const city = PRESET_CITIES.find((c) => c.id === locationId);
-  const cityName = city?.name ?? locationId;
+  const cityName = city?.name ?? cityNameHint ?? locationId;
 
-  const [now, forecast, clothing] = await Promise.all([
+  const [now, forecast, clothing3d] = await Promise.all([
     getWeatherNow(locationId),
     getForecast3d(locationId),
-    getClothingIndex(locationId),
+    getClothingIndex3d(locationId),
   ]);
 
-  return { city: cityName, locationId, now, forecast, clothing };
+  return { city: cityName, locationId, now, forecast, clothing3d };
+}
+
+const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+
+function getDayMeta(dateStr: string): { dayLabel: string; weekday: string; dateShort: string } {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(dateStr + "T00:00:00");
+  const diff = Math.round((target.getTime() - today.getTime()) / 86400000);
+  const weekday = WEEKDAYS[target.getDay()];
+  const dateShort = `${target.getMonth() + 1}/${target.getDate()}`;
+  let dayLabel = dateStr;
+  if (diff === 0) dayLabel = "今天";
+  else if (diff === 1) dayLabel = "明天";
+  else if (diff === 2) dayLabel = "后天";
+  return { dayLabel, weekday, dateShort };
 }
 
 export function toWeatherSummary(data: WeatherData): WeatherSummary {
   const today = data.forecast[0];
+  const todayClothing = data.clothing3d.find((c) => c.date === today?.fxDate);
+
+  const forecasts: ForecastSummary[] = data.forecast.map((f) => {
+    const clothing = data.clothing3d.find((c) => c.date === f.fxDate);
+    const { dayLabel, weekday, dateShort } = getDayMeta(f.fxDate);
+    return {
+      date: f.fxDate,
+      dayLabel,
+      weekday,
+      dateShort,
+      tempRange: `${f.tempMin}~${f.tempMax}°C`,
+      tempMax: f.tempMax,
+      tempMin: f.tempMin,
+      weatherDay: f.textDay,
+      weatherNight: f.textNight,
+      iconDay: f.iconDay,
+      clothingAdvice: clothing?.text ?? null,
+    };
+  });
+
   return {
     city: data.city,
     temp: `${data.now.temp}°C`,
@@ -148,12 +204,13 @@ export function toWeatherSummary(data: WeatherData): WeatherSummary {
     humidity: `${data.now.humidity}%`,
     wind: `${data.now.windDir} ${data.now.windScale}级`,
     todayRange: today ? `${today.tempMin}~${today.tempMax}°C` : "",
-    clothingAdvice: data.clothing?.text ?? null,
+    clothingAdvice: todayClothing?.text ?? null,
+    forecasts,
   };
 }
 
 export async function searchCity(keyword: string): Promise<CityOption[]> {
-  const data = await fetchQWeather(GEO_HOST, "/v2/city/lookup", {
+  const data = await fetchQWeather(GEO_HOST, "/geo/v2/city/lookup", {
     location: keyword,
     lang: "zh",
   });
@@ -165,13 +222,30 @@ export async function searchCity(keyword: string): Promise<CityOption[]> {
   }));
 }
 
-export function buildWeatherPromptContext(summary: WeatherSummary): string {
-  let ctx = `当前天气信息（${summary.city}）：`;
-  ctx += `\n- 天气: ${summary.weather}，气温 ${summary.temp}（体感 ${summary.feelsLike}）`;
-  ctx += `\n- 今日温度范围: ${summary.todayRange}`;
-  ctx += `\n- 湿度: ${summary.humidity}，风力: ${summary.wind}`;
-  if (summary.clothingAdvice) {
-    ctx += `\n- 穿衣建议: ${summary.clothingAdvice}`;
+export function buildWeatherPromptContext(summary: WeatherSummary, targetDay: number = 0): string {
+  const forecast = summary.forecasts[targetDay];
+  if (!forecast) {
+    // Fallback to realtime if forecast unavailable
+    let ctx = `当前天气信息（${summary.city}）：`;
+    ctx += `\n- 天气: ${summary.weather}，气温 ${summary.temp}（体感 ${summary.feelsLike}）`;
+    ctx += `\n- 今日温度范围: ${summary.todayRange}`;
+    ctx += `\n- 湿度: ${summary.humidity}，风力: ${summary.wind}`;
+    if (summary.clothingAdvice) {
+      ctx += `\n- 穿衣建议: ${summary.clothingAdvice}`;
+    }
+    return ctx;
+  }
+
+  const dayLabel = forecast.dayLabel;
+  let ctx = `${dayLabel}天气预报（${summary.city}）：`;
+  ctx += `\n- 白天: ${forecast.weatherDay}，夜间: ${forecast.weatherNight}`;
+  ctx += `\n- 温度范围: ${forecast.tempRange}`;
+  if (targetDay === 0) {
+    ctx += `\n- 当前实时: ${summary.temp}（体感 ${summary.feelsLike}）`;
+    ctx += `\n- 湿度: ${summary.humidity}，风力: ${summary.wind}`;
+  }
+  if (forecast.clothingAdvice) {
+    ctx += `\n- 穿衣建议: ${forecast.clothingAdvice}`;
   }
   return ctx;
 }

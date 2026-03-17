@@ -17,11 +17,11 @@ export function buildMatchingPrompt(
     `  - id="${i.id}" ${i.name}${i.color ? ` 颜色:${i.color}` : ""}${i.style ? ` 风格:${i.style}` : ""}${i.season ? ` 季节:${i.season}` : ""}${i.occasion ? ` 场合:${i.occasion}` : ""}`;
 
   const weatherBlock = weatherContext
-    ? `\n【今日天气】\n${weatherContext}\n`
+    ? `\n【天气信息】\n${weatherContext}\n`
     : "";
 
   const weatherHint = weatherContext
-    ? "\n4. 适合当前天气（根据气温和天气状况选择合适的面料厚度和款式）"
+    ? "\n4. 适合目标日期天气（根据预报气温和天气状况选择合适的面料厚度和款式）"
     : "";
 
   return `你是一位专业的时尚搭配师。以下是用户衣橱中的单品：
