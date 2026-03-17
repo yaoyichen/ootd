@@ -30,6 +30,10 @@ function AddItemForm() {
   const [saving, setSaving] = useState(false);
   const [saveDone, setSaveDone] = useState(false);
   const [recognizing, setRecognizing] = useState(false);
+  const [imageHash, setImageHash] = useState<string | null>(null);
+  const [duplicateItem, setDuplicateItem] = useState<{
+    id: string; name: string; category: string; color?: string; imagePath: string;
+  } | null>(null);
 
   const [form, setForm] = useState({
     name: "",
@@ -70,7 +74,17 @@ function AddItemForm() {
     }
   }, []);
 
+  const computeHash = useCallback(async (file: File): Promise<string> => {
+    const buffer = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  }, []);
+
   const handleFile = useCallback((file: File) => {
+    // Compute SHA-256 hash for duplicate detection
+    computeHash(file).then(setImageHash);
+
     const reader = new FileReader();
     reader.onload = (e) => {
       if (e.target?.result) {
@@ -80,7 +94,7 @@ function AddItemForm() {
       }
     };
     reader.readAsDataURL(file);
-  }, [recognizeImage]);
+  }, [recognizeImage, computeHash]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -110,7 +124,7 @@ function AddItemForm() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = async () => {
+  const doSave = async () => {
     if (!preview || !form.name || !form.category) return;
     setSaving(true);
 
@@ -120,17 +134,23 @@ function AddItemForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image: preview, folder: "items" }),
       });
-      const { path: imagePath, processedImage } = await uploadRes.json();
+      const { path: imagePath, processedImage, originalPath } = await uploadRes.json();
 
-      await fetch("/api/items", {
+      const itemRes = await fetch("/api/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
           price: form.price ? parseFloat(form.price) : undefined,
           imagePath,
+          originalImagePath: originalPath,
+          imageHash: imageHash,
         }),
       });
+      if (!itemRes.ok) {
+        const err = await itemRes.json().catch(() => ({}));
+        throw new Error(err.error || "创建单品失败");
+      }
 
       // Show the bg-removed result before navigating
       if (processedImage) {
@@ -144,6 +164,30 @@ function AddItemForm() {
       alert("保存失败，请重试");
       setSaving(false);
     }
+  };
+
+  const handleSubmit = async () => {
+    if (!preview || !form.name || !form.category) return;
+
+    // Check for duplicate before expensive upload + bg removal
+    if (imageHash) {
+      try {
+        const res = await fetch("/api/items/check-duplicate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageHash }),
+        });
+        const data = await res.json();
+        if (data.duplicate) {
+          setDuplicateItem(data.item);
+          return; // Show duplicate dialog, don't proceed
+        }
+      } catch {
+        // Check failed, proceed with save anyway
+      }
+    }
+
+    doSave();
   };
 
   const canSave = !!preview && !!form.name && !saving;
@@ -422,6 +466,51 @@ function AddItemForm() {
           </button>
         </div>
       </main>
+
+      {/* Duplicate detection dialog */}
+      {duplicateItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(6px)" }}>
+          <div className="glass rounded-3xl p-6 mx-6 max-w-sm w-full flex flex-col items-center gap-4" style={{ background: "rgba(255,255,255,0.95)" }}>
+            <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(255,149,0,0.1)" }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF9500" strokeWidth="2" strokeLinecap="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 8v4m0 4h.01" />
+              </svg>
+            </div>
+            <p className="text-base font-semibold text-center" style={{ color: "#1D1D1F" }}>
+              这件衣服好像已经在衣橱里了
+            </p>
+            <div className="flex items-center gap-3 p-3 rounded-2xl w-full" style={{ background: "rgba(0,0,0,0.03)" }}>
+              <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0" style={{ background: "rgba(0,0,0,0.05)" }}>
+                <Image src={duplicateItem.imagePath} alt={duplicateItem.name} fill className="object-cover" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium truncate" style={{ color: "#1D1D1F" }}>{duplicateItem.name}</p>
+                <p className="text-xs" style={{ color: "#AEAEB2" }}>
+                  {CATEGORIES.find(c => c.value === duplicateItem.category)?.label}
+                  {duplicateItem.color ? ` · ${duplicateItem.color}` : ""}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => setDuplicateItem(null)}
+                className="flex-1 py-3 rounded-full text-sm font-medium"
+                style={{ background: "rgba(0,0,0,0.05)", color: "#1D1D1F" }}
+              >
+                取消
+              </button>
+              <button
+                onClick={() => { setDuplicateItem(null); doSave(); }}
+                className="flex-1 py-3 rounded-full text-sm font-medium text-white"
+                style={{ background: "linear-gradient(135deg, #FF9500, #FFCC00)" }}
+              >
+                仍然添加
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

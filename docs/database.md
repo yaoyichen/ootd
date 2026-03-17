@@ -1,7 +1,7 @@
 # 数据库参考文档
 
 **技术栈**：Prisma 7 + SQLite + better-sqlite3 adapter
-**更新日期**：2026-03-17（v4：新增 WeatherCache 模型，天气数据按小时+城市缓存，30天自动过期）
+**更新日期**：2026-03-17（v5：Item 新增 imageHash + originalImagePath，支持重复上传检测）
 
 ---
 
@@ -106,7 +106,9 @@ if (process.env.NODE_ENV !== "production") {
 | price | Float? | 否 | — | 购入价格 |
 | purchaseDate | String? | 否 | — | 购入日期 |
 | notes | String? | 否 | — | 备注 |
-| imagePath | String | 是 | — | 图片路径（如 `/uploads/items/xxx.jpg`） |
+| imagePath | String | 是 | — | 抠图后的图片路径（如 `/uploads/items/xxx.png`） |
+| originalImagePath | String? | 否 | — | 原始上传图片路径（如 `/uploads/items-original/xxx.jpg`） |
+| imageHash | String? | 否 | — | 原始图片 SHA-256 哈希，用于检测重复上传 |
 | createdAt | DateTime | 是 | now() | 创建时间 |
 | updatedAt | DateTime | 是 | 自动更新 | 更新时间 |
 
@@ -230,15 +232,22 @@ JSON 字符串，包含五个评分维度（每项 1–100 分）：
 返回：
 
 ```json
-{ "path": "/uploads/items/xxxxxxxx.jpg" }
+{
+  "path": "/uploads/items/xxxxxxxx.png",
+  "processedImage": "data:image/png;base64,...",
+  "originalPath": "/uploads/items-original/xxxxxxxx.jpg"
+}
 ```
+
+> `processedImage` 和 `originalPath` 仅在 `folder="items"` 时返回。
 
 ### 单品 CRUD
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/api/items` | 获取单品列表 |
-| POST | `/api/items` | 创建单品 |
+| POST | `/api/items` | 创建单品（支持 imageHash + originalImagePath） |
+| POST | `/api/items/check-duplicate` | 根据 imageHash 检测重复上传 |
 | GET | `/api/items/[id]` | 获取单品详情 |
 | PUT | `/api/items/[id]` | 更新单品 |
 | DELETE | `/api/items/[id]` | 删除单品（同时删除图片文件） |

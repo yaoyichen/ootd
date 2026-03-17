@@ -8,21 +8,23 @@ datasource db {
 }
 
 model Item {
-  id           String   @id @default(cuid())
-  name         String
-  category     String
-  subcategory  String?
-  color        String?
-  style        String?
-  season       String?
-  occasion     String?
-  brand        String?
-  price        Float?
-  purchaseDate String?
-  notes        String?
-  imagePath    String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                String   @id @default(cuid())
+  name              String
+  category          String
+  subcategory       String?
+  color             String?
+  style             String?
+  season            String?
+  occasion          String?
+  brand             String?
+  price             Float?
+  purchaseDate      String?
+  notes             String?
+  imagePath         String
+  originalImagePath String?  /// 原始上传图片路径（未抠图），用于去重比对
+  imageHash         String?  /// 原始图片 SHA-256 哈希，用于检测重复上传
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 model PersonImage {

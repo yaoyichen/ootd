@@ -25,6 +25,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // For clothing items: save original first, then remove background
+    let originalPath: string | undefined;
+    if (folder === "items") {
+      const origRaw = image.startsWith("data:") ? image.split(",")[1] : image;
+      const origBuffer = Buffer.from(origRaw, "base64");
+      const origExt = image.startsWith("data:image/png") ? ".png" : ".jpg";
+      const origFilename = `${crypto.randomUUID()}${origExt}`;
+      const origDir = path.join(UPLOAD_ROOT, "items-original");
+      if (!fs.existsSync(origDir)) {
+        fs.mkdirSync(origDir, { recursive: true });
+      }
+      fs.writeFileSync(path.join(origDir, origFilename), origBuffer);
+      originalPath = `/uploads/items-original/${origFilename}`;
+    }
+
     // Remove background for clothing items
     let processedImage = image;
     if (folder === "items") {
@@ -51,7 +66,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       path: publicPath,
-      ...(folder === "items" && { processedImage: processedImage }),
+      ...(folder === "items" && { processedImage, originalPath }),
     });
   } catch (err) {
     console.error("Upload error:", err);
