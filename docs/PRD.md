@@ -471,6 +471,7 @@ AI 服务（DashScope / 阿里云百炼）
 - [x] 天气联动（接入和风天气 API，推荐页天气卡片 + 穿衣建议）
 - [x] AI 自动抠图去背景（DashScope qwen-image-edit，去除背景 + 人物模特，保存后原图/抠图对比展示）
 - [x] 单品上传支持粘贴图片（Web 端 Clipboard API）
+- [x] Prompt 集中管理 + tryon 代码去重（6 个 AI prompt 提取到 lib/prompts/，消除重复代码）
 - [ ] 推荐 prompt 精调与效果优化
 
 ### Phase 2 — 完整体验
