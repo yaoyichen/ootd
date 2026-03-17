@@ -35,6 +35,12 @@ function AddItemForm() {
     id: string; name: string; category: string; color?: string; imagePath: string;
   } | null>(null);
 
+  // Taobao import states
+  const [inputMode, setInputMode] = useState<"upload" | "taobao">("upload");
+  const [taobaoInput, setTaobaoInput] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+
   const [form, setForm] = useState({
     name: "",
     category: initialCategory,
@@ -81,6 +87,18 @@ function AddItemForm() {
     return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
   }, []);
 
+  const computeHashFromBase64 = useCallback(async (dataUrl: string): Promise<string> => {
+    const base64 = dataUrl.split(",")[1];
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const hashBuffer = await crypto.subtle.digest("SHA-256", bytes.buffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  }, []);
+
   const handleFile = useCallback((file: File) => {
     // Compute SHA-256 hash for duplicate detection
     computeHash(file).then(setImageHash);
@@ -119,6 +137,50 @@ function AddItemForm() {
     },
     [handleFile]
   );
+
+  const handleTaobaoImport = useCallback(async () => {
+    if (!taobaoInput.trim()) return;
+    setImporting(true);
+    setImportError(null);
+
+    try {
+      const res = await fetch("/api/import/taobao", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input: taobaoInput.trim() }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setImportError(data.error || "导入失败");
+        return;
+      }
+
+      // Set preview image
+      setPreview(data.image);
+
+      // Compute hash from the base64 image
+      const hash = await computeHashFromBase64(data.image);
+      setImageHash(hash);
+
+      // Fill form with recognition results + product info
+      const r = data.recognition ?? {};
+      setForm((prev) => ({
+        ...prev,
+        name: r.name || data.title || prev.name,
+        category: r.category || prev.category,
+        color: r.color || prev.color,
+        style: r.style || prev.style,
+        season: r.season || prev.season,
+        occasion: r.occasion || prev.occasion,
+        price: data.price || prev.price,
+      }));
+    } catch {
+      setImportError("网络错误，请重试");
+    } finally {
+      setImporting(false);
+    }
+  }, [taobaoInput, computeHashFromBase64]);
 
   const updateField = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -218,7 +280,35 @@ function AddItemForm() {
         </div>
 
         <div className="flex flex-col gap-6">
-          {/* Image upload / comparison */}
+          {/* Input mode tabs */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setInputMode("upload")}
+              className="flex-1 py-2.5 rounded-full text-sm font-medium transition-colors"
+              style={{
+                color: inputMode === "upload" ? "#fff" : "#6E6E73",
+                background: inputMode === "upload"
+                  ? "linear-gradient(135deg, #FF9500, #FFCC00)"
+                  : "rgba(0,0,0,0.04)",
+              }}
+            >
+              拍照上传
+            </button>
+            <button
+              onClick={() => setInputMode("taobao")}
+              className="flex-1 py-2.5 rounded-full text-sm font-medium transition-colors"
+              style={{
+                color: inputMode === "taobao" ? "#fff" : "#6E6E73",
+                background: inputMode === "taobao"
+                  ? "linear-gradient(135deg, #FF9500, #FFCC00)"
+                  : "rgba(0,0,0,0.04)",
+              }}
+            >
+              淘宝导入
+            </button>
+          </div>
+
+          {/* Image upload / Taobao import / comparison */}
           {saveDone && processedPreview ? (
             <div className="glass rounded-3xl overflow-hidden p-4">
               <div className="flex gap-3" style={{ aspectRatio: "4/3" }}>
@@ -255,6 +345,59 @@ function AddItemForm() {
                 </div>
               </div>
             </div>
+          ) : inputMode === "taobao" && !preview ? (
+            /* Taobao import input */
+            <div className="glass rounded-3xl overflow-hidden p-6">
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-semibold" style={{ color: "#1D1D1F" }}>
+                    粘贴淘口令或商品链接
+                  </label>
+                  <textarea
+                    value={taobaoInput}
+                    onChange={(e) => {
+                      setTaobaoInput(e.target.value);
+                      setImportError(null);
+                    }}
+                    placeholder={"如：￥abc￥ 或 https://m.tb.cn/xxx"}
+                    rows={3}
+                    className="w-full px-4 py-3 rounded-xl text-sm outline-none resize-none"
+                    style={{
+                      background: "rgba(0,0,0,0.03)",
+                      border: `1px solid ${importError ? "rgba(255,59,48,0.3)" : "rgba(0,0,0,0.06)"}`,
+                      color: "#1D1D1F",
+                    }}
+                  />
+                  {importError && (
+                    <p className="text-xs" style={{ color: "#FF3B30" }}>
+                      {importError}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={handleTaobaoImport}
+                  disabled={importing || !taobaoInput.trim()}
+                  className="w-full py-3 rounded-full text-sm font-semibold transition-colors"
+                  style={{
+                    color: importing || !taobaoInput.trim() ? "#AEAEB2" : "#fff",
+                    background: importing || !taobaoInput.trim()
+                      ? "rgba(0,0,0,0.06)"
+                      : "linear-gradient(135deg, #FF9500, #FFCC00)",
+                  }}
+                >
+                  {importing ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="w-4 h-4" viewBox="0 0 16 16" style={{ animation: "spin 0.8s linear infinite" }}>
+                        <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="28 10" strokeLinecap="round" />
+                      </svg>
+                      正在导入...
+                    </span>
+                  ) : (
+                    "导入商品"
+                  )}
+                </button>
+              </div>
+            </div>
           ) : (
             <div
               className="glass rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-[1.01]"
@@ -268,7 +411,7 @@ function AddItemForm() {
               {preview ? (
                 <div className="relative w-full h-full">
                   <Image src={preview} alt="Preview" fill className="object-contain" />
-                  {recognizing && (
+                  {(recognizing || importing) && (
                     <div className="absolute inset-0 flex items-end justify-center pb-4" style={{ background: "linear-gradient(transparent 60%, rgba(0,0,0,0.4))" }}>
                       <span className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium text-white" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)" }}>
                         <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" style={{ animation: "spin 0.8s linear infinite" }}>
