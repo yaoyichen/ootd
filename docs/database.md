@@ -1,7 +1,7 @@
 # 数据库参考文档
 
 **技术栈**：Prisma 7 + SQLite + better-sqlite3 adapter
-**更新日期**：2026-03-15（v3：新增 DailyRecommendation 模型 + Outfit 评分字段）
+**更新日期**：2026-03-17（v4：新增 WeatherCache 模型，天气数据按小时+城市缓存，30天自动过期）
 
 ---
 
@@ -188,6 +188,25 @@ JSON 字符串，包含五个评分维度（每项 1–100 分）：
 **联合唯一索引**：`@@unique([date, rank])`
 
 每天保存 Top 3 推荐记录。重新生成推荐时，先删除当天已有记录再写入新数据。
+
+### WeatherCache（天气缓存）
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| id | String | 是 | cuid() 自动生成 | 主键 |
+| locationId | String | 是 | — | 城市 Location ID，如 `"101210101"` |
+| hourKey | String | 是 | — | 小时级缓存键，格式 `YYYYMMDDHH`，如 `"2026031714"` |
+| data | String | 是 | — | 完整 WeatherData JSON（含 now + 3天预报 + 3天穿衣指数） |
+| createdAt | DateTime | 是 | now() | 创建时间 |
+| expiresAt | DateTime | 是 | — | 过期时间（createdAt + 30 天） |
+
+**联合唯一索引**：`@@unique([locationId, hourKey])`
+**过期索引**：`@@index([expiresAt])`
+
+**缓存策略**：
+- 同一城市同一小时内只调一次 QWeather API，后续请求直接读 DB（毫秒级响应）
+- 写入新缓存时自动清理所有 `expiresAt < now()` 的过期记录
+- 30 天 TTL，表不会无限膨胀
 
 ---
 

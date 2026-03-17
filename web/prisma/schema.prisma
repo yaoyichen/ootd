@@ -60,3 +60,16 @@ model DailyRecommendation {
 
   @@unique([date, rank])
 }
+
+/// 天气数据缓存（按小时+城市，30天自动过期）
+model WeatherCache {
+  id         String   @id @default(cuid())
+  locationId String
+  hourKey    String   /// 格式 YYYYMMDDHH，如 "2026031714"
+  data       String   /// 完整 WeatherData JSON
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime /// createdAt + 30 天，查询时过滤
+
+  @@unique([locationId, hourKey])
+  @@index([expiresAt])
+}

@@ -145,7 +145,34 @@ export async function getClothingIndex3d(locationId: string): Promise<ClothingIn
   }
 }
 
+// ── 缓存层 ──
+
+const CACHE_TTL_DAYS = 30;
+
+function currentHourKey(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  const h = String(now.getHours()).padStart(2, "0");
+  return `${y}${m}${d}${h}`;
+}
+
 export async function getWeatherData(locationId: string, cityNameHint?: string): Promise<WeatherData> {
+  const hourKey = currentHourKey();
+
+  const { prisma } = await import("@/lib/prisma");
+
+  // 1. 尝试读缓存
+  const cached = await prisma.weatherCache.findUnique({
+    where: { locationId_hourKey: { locationId, hourKey } },
+  });
+
+  if (cached && cached.expiresAt > new Date()) {
+    return JSON.parse(cached.data) as WeatherData;
+  }
+
+  // 2. 缓存未命中，调 API
   const city = PRESET_CITIES.find((c) => c.id === locationId);
   const cityName = city?.name ?? cityNameHint ?? locationId;
 
@@ -155,7 +182,26 @@ export async function getWeatherData(locationId: string, cityNameHint?: string):
     getClothingIndex3d(locationId),
   ]);
 
-  return { city: cityName, locationId, now, forecast, clothing3d };
+  const weatherData: WeatherData = { city: cityName, locationId, now, forecast, clothing3d };
+
+  // 3. 写入缓存 + 清理过期数据
+  const expiresAt = new Date(Date.now() + CACHE_TTL_DAYS * 86400000);
+  try {
+    await prisma.$transaction([
+      prisma.weatherCache.upsert({
+        where: { locationId_hourKey: { locationId, hourKey } },
+        update: { data: JSON.stringify(weatherData), expiresAt },
+        create: { locationId, hourKey, data: JSON.stringify(weatherData), expiresAt },
+      }),
+      prisma.weatherCache.deleteMany({
+        where: { expiresAt: { lt: new Date() } },
+      }),
+    ]);
+  } catch {
+    // 缓存写入失败不影响正常返回
+  }
+
+  return weatherData;
 }
 
 const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
