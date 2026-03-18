@@ -215,27 +215,27 @@ export async function POST(req: NextRequest) {
             })
           );
 
-          // Step 4: Sort by score, take top 3, save as DailyRecommendation
+          // Step 4: Sort by score, take top 5, save as DailyRecommendation
           scored.sort((a, b) => b.score - a.score);
-          const top3 = scored.slice(0, 3);
+          const top5 = scored.slice(0, 5);
           const date = todayStr();
 
           await prisma.dailyRecommendation.deleteMany({ where: { date } });
 
-          for (let i = 0; i < top3.length; i++) {
+          for (let i = 0; i < top5.length; i++) {
             await prisma.dailyRecommendation.create({
               data: {
                 date,
                 rank: i + 1,
-                outfitId: top3[i].outfitId,
-                reason: top3[i].reason,
+                outfitId: top5[i].outfitId,
+                reason: top5[i].reason,
               },
             });
           }
 
           // Build full response with item details
           const recommendations = await Promise.all(
-            top3.map(async (r, idx) => {
+            top5.map(async (r, idx) => {
               const topItem = items.find((i) => i.id === r.topItemId);
               const bottomItem = items.find((i) => i.id === r.bottomItemId);
               return {

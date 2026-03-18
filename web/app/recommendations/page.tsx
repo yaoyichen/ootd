@@ -1116,7 +1116,7 @@ export default function RecommendationsPage() {
           >
             {/* Header */}
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold" style={{ color: "#1D1D1F" }}>随便穿穿</h3>
+              <h3 className="text-lg font-bold" style={{ color: "#1D1D1F" }}>Surprise Me</h3>
               <button
                 onClick={handleCloseQuick}
                 className="w-8 h-8 rounded-full flex items-center justify-center"
@@ -1520,7 +1520,7 @@ export default function RecommendationsPage() {
                       </svg>
                       加载中...
                     </span>
-                  ) : "随便穿穿"}
+                  ) : "Surprise Me"}
                 </button>
               </div>
             )}
@@ -1619,7 +1619,7 @@ export default function RecommendationsPage() {
                   border: "1px solid rgba(242,124,136,0.15)",
                 }}
               >
-                随便穿穿
+                Surprise Me
               </button>
             </div>
           </>
