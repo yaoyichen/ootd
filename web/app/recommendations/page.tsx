@@ -780,10 +780,7 @@ export default function RecommendationsPage() {
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [showPersonPicker, setShowPersonPicker] = useState(false);
   const [rescoring, setRescoring] = useState(false);
-  const [quickOutfits, setQuickOutfits] = useState<Recommendation[]>([]);
   const [quickLoading, setQuickLoading] = useState(false);
-  const [quickOpen, setQuickOpen] = useState(false);
-  const [quickRemaining, setQuickRemaining] = useState<number | null>(null);
   const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
   const [cityId, setCityId] = useState(DEFAULT_CITY_ID);
   const [cityName, setCityName] = useState(
@@ -1013,9 +1010,8 @@ export default function RecommendationsPage() {
 
   const handleQuickOutfit = useCallback(async () => {
     setQuickLoading(true);
-    setQuickOpen(true);
     try {
-      const excludeIds = quickOutfits.map((o) => o.outfitId);
+      const excludeIds = recommendations.map((o) => o.outfitId);
       const params = new URLSearchParams();
       if (excludeIds.length > 0) params.set("excludeIds", excludeIds.join(","));
       params.set("date", date);
@@ -1034,47 +1030,15 @@ export default function RecommendationsPage() {
           topItem: o.topItem,
           bottomItem: o.bottomItem,
         }));
-        setQuickOutfits(mapped);
-        setQuickRemaining(data.remaining ?? 0);
-      } else {
-        setQuickRemaining(0);
+        setRecommendations(mapped);
+        setPhase("complete");
       }
     } catch {
-      setQuickRemaining(0);
+      // ignore
     } finally {
       setQuickLoading(false);
     }
-  }, [quickOutfits, date]);
-
-  const handleQuickRefresh = useCallback(() => {
-    handleQuickOutfit();
-  }, [handleQuickOutfit]);
-
-  const handleCloseQuick = useCallback(() => {
-    setQuickOpen(false);
-    setQuickOutfits([]);
-    setQuickRemaining(null);
-  }, []);
-
-  const handleQuickToggleFavorite = async (outfitId: string) => {
-    const rec = quickOutfits.find((r) => r.outfitId === outfitId);
-    if (!rec) return;
-    const newVal = !rec.isFavorite;
-    setQuickOutfits((prev) =>
-      prev.map((r) => r.outfitId === outfitId ? { ...r, isFavorite: newVal } : r)
-    );
-    try {
-      await fetch(`/api/outfits/${outfitId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isFavorite: newVal }),
-      });
-    } catch {
-      setQuickOutfits((prev) =>
-        prev.map((r) => r.outfitId === outfitId ? { ...r, isFavorite: !newVal } : r)
-      );
-    }
-  };
+  }, [recommendations, date]);
 
   const isProcessing =
     phase === "matching" || phase === "generating" || phase === "scoring";
@@ -1116,187 +1080,6 @@ export default function RecommendationsPage() {
         />
       )}
 
-      {/* Quick outfit modal */}
-      {quickOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm">
-          <div
-            className="w-full max-w-5xl mx-4 mb-4 sm:mb-0 rounded-3xl p-5 flex flex-col gap-4 max-h-[90vh]"
-            style={{ background: "rgba(255,255,255,0.96)", backdropFilter: "blur(20px)" }}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold" style={{ color: "#1D1D1F" }}>Surprise Me</h3>
-              <button
-                onClick={handleCloseQuick}
-                className="w-8 h-8 rounded-full flex items-center justify-center"
-                style={{ background: "rgba(0,0,0,0.05)" }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" strokeWidth="2" strokeLinecap="round">
-                  <path d="M18 6 6 18M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Outfit grid */}
-            <div className="overflow-y-auto flex-1">
-              {quickLoading && quickOutfits.length === 0 ? (
-                <div className="flex items-center justify-center py-16">
-                  <div
-                    className="w-8 h-8 rounded-full"
-                    style={{
-                      border: "3px solid rgba(242,124,136,0.15)",
-                      borderTopColor: "#F27C88",
-                      animation: "spin 0.8s linear infinite",
-                    }}
-                  />
-                </div>
-              ) : quickOutfits.length === 0 ? (
-                <div className="flex flex-col items-center py-16 gap-2">
-                  <p className="text-sm" style={{ color: "#AEAEB2" }}>暂无可推荐的搭配</p>
-                  <p className="text-xs" style={{ color: "#AEAEB2" }}>先去试穿页生成一些穿搭效果图吧</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                  {quickOutfits.map((rec) => (
-                    <div
-                      key={rec.outfitId}
-                      className="glass rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02]"
-                      style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.04)" }}
-                    >
-                      <div className="relative" style={{ aspectRatio: "3/4" }}>
-                        <Image
-                          src={rec.imagePath}
-                          alt={`穿搭 ${rec.rank}`}
-                          fill
-                          className="object-cover"
-                          unoptimized
-                        />
-                        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/50 to-transparent" />
-                        {/* Score badge */}
-                        {rec.score !== null && (
-                          <div
-                            className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
-                            style={{
-                              background: "linear-gradient(135deg, #F27C88, #FACDD0)",
-                              boxShadow: "0 2px 6px rgba(242,124,136,0.3)",
-                            }}
-                          >
-                            {rec.score}分
-                          </div>
-                        )}
-                        {/* Reason tag */}
-                        {rec.reason && (
-                          <div
-                            className="absolute top-2 right-2 px-1.5 py-0.5 rounded-full text-[9px] font-medium"
-                            style={{ background: "rgba(0,0,0,0.4)", color: "rgba(255,255,255,0.9)" }}
-                          >
-                            {rec.reason}
-                          </div>
-                        )}
-                        {/* Favorite button */}
-                        <button
-                          onClick={() => handleQuickToggleFavorite(rec.outfitId)}
-                          className="absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all"
-                          style={{
-                            background: rec.isFavorite ? "rgba(255,59,48,0.9)" : "rgba(255,255,255,0.2)",
-                            backdropFilter: "blur(12px)",
-                          }}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill={rec.isFavorite ? "white" : "none"} stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                          </svg>
-                        </button>
-                        {/* Item thumbnails */}
-                        <div className="absolute bottom-2 left-2 flex gap-1">
-                          {rec.topItem && (
-                            <button
-                              onClick={() => setPreviewImage({ src: rec.topItem!.imagePath, alt: rec.topItem!.name })}
-                              className="w-8 h-8 rounded-md overflow-hidden border border-white/40 cursor-pointer hover:border-white/70 transition-all"
-                            >
-                              <Image src={rec.topItem.imagePath} alt={rec.topItem.name} width={32} height={32} className="object-cover w-full h-full" />
-                            </button>
-                          )}
-                          {rec.bottomItem && (
-                            <button
-                              onClick={() => setPreviewImage({ src: rec.bottomItem!.imagePath, alt: rec.bottomItem!.name })}
-                              className="w-8 h-8 rounded-md overflow-hidden border border-white/40 cursor-pointer hover:border-white/70 transition-all"
-                            >
-                              <Image src={rec.bottomItem.imagePath} alt={rec.bottomItem.name} width={32} height={32} className="object-cover w-full h-full" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      {/* Info */}
-                      <div className="p-2.5">
-                        <div className="flex items-center gap-1 flex-wrap">
-                          {rec.topItem && (
-                            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ color: "#F27C88", background: "rgba(242,124,136,0.08)" }}>
-                              {rec.topItem.name}
-                            </span>
-                          )}
-                          {rec.topItem && rec.bottomItem && (
-                            <span className="text-[9px]" style={{ color: "#AEAEB2" }}>+</span>
-                          )}
-                          {rec.bottomItem && (
-                            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ color: "#F27C88", background: "rgba(242,124,136,0.08)" }}>
-                              {rec.bottomItem.name}
-                            </span>
-                          )}
-                        </div>
-                        {rec.score !== null && rec.scoreDims && (
-                          <div className="flex justify-center mt-1">
-                            <RadarChart dims={rec.scoreDims} score={rec.score} size={100} />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Footer buttons */}
-            <div className="flex items-center justify-between pt-2 border-t" style={{ borderColor: "rgba(0,0,0,0.05)" }}>
-              <span className="text-xs" style={{ color: "#AEAEB2" }}>
-                {quickOutfits.length > 0
-                  ? `已展示 ${quickOutfits.length} 套${quickRemaining !== null && quickRemaining > 0 ? `，还有 ${quickRemaining} 套可换` : ""}`
-                  : ""}
-              </span>
-              <div className="flex gap-3">
-                <button
-                  onClick={handleQuickRefresh}
-                  disabled={quickLoading || quickRemaining === 0}
-                  className="px-5 py-2.5 rounded-full text-sm font-semibold transition-all"
-                  style={{
-                    background: quickRemaining === 0
-                      ? "rgba(0,0,0,0.04)"
-                      : "linear-gradient(135deg, #F27C88, #FACDD0)",
-                    color: quickRemaining === 0 ? "#AEAEB2" : "#fff",
-                    boxShadow: quickRemaining === 0 ? "none" : "0 4px 16px rgba(242,124,136,0.25)",
-                    opacity: quickLoading ? 0.7 : 1,
-                  }}
-                >
-                  {quickLoading ? (
-                    <span className="flex items-center gap-1.5">
-                      <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" style={{ animation: "spin 0.8s linear infinite" }}>
-                        <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="28 10" strokeLinecap="round" />
-                      </svg>
-                      加载中...
-                    </span>
-                  ) : quickRemaining === 0 ? "已看完所有推荐" : "换一批"}
-                </button>
-                <button
-                  onClick={handleCloseQuick}
-                  className="px-5 py-2.5 rounded-full text-sm font-medium transition-colors"
-                  style={{ color: "#6E6E73", background: "rgba(0,0,0,0.04)" }}
-                >
-                  关闭
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <main className="relative z-10 max-w-5xl mx-auto px-6 pt-8 pb-20">
         {/* Header */}

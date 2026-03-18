@@ -10,7 +10,11 @@ interface Item {
   category: string;
   subcategory?: string;
   color?: string;
-  brand?: string;
+  material?: string;
+  fit?: string;
+  pattern?: string;
+  thickness?: string;
+  description?: string;
   imagePath: string;
   createdAt: string;
 }

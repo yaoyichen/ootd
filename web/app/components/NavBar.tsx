@@ -60,6 +60,7 @@ const NAV_ITEMS = [
 
 export function NavBar() {
   const pathname = usePathname();
+  if (pathname.startsWith("/business")) return null;
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";

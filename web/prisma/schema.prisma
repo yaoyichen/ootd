@@ -16,10 +16,11 @@ model Item {
   style             String?
   season            String?
   occasion          String?
-  brand             String?
-  price             Float?
-  purchaseDate      String?
-  notes             String?
+  material          String?  /// 材质（棉、牛仔、丝绸、羊毛、涤纶、皮革等）
+  fit               String?  /// 版型（修身、宽松、常规、oversize）
+  pattern           String?  /// 图案（纯色、条纹、格纹、印花、碎花）
+  thickness         String?  /// 厚度（薄、适中、厚）
+  description       String?  /// 简短描述（如"V领开衫，金属纽扣"）
   imagePath         String
   originalImagePath String?  /// 原始上传图片路径（未抠图），用于去重比对
   imageHash         String?  /// 原始图片 SHA-256 哈希，用于检测重复上传

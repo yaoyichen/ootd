@@ -3,6 +3,10 @@ import {
   VALID_CATEGORIES,
   VALID_SEASONS,
   VALID_OCCASIONS,
+  VALID_MATERIALS,
+  VALID_FITS,
+  VALID_PATTERNS,
+  VALID_THICKNESSES,
   buildRecognizePrompt,
 } from "@/lib/prompts/recognize";
 import { chatCompletion } from "@/lib/llm";
@@ -42,6 +46,10 @@ export async function POST(req: NextRequest) {
       style: String(parsed.style || ""),
       season: VALID_SEASONS.includes(parsed.season) ? parsed.season : "",
       occasion: VALID_OCCASIONS.includes(parsed.occasion) ? parsed.occasion : "",
+      material: VALID_MATERIALS.includes(parsed.material) ? parsed.material : "",
+      fit: VALID_FITS.includes(parsed.fit) ? parsed.fit : "",
+      pattern: VALID_PATTERNS.includes(parsed.pattern) ? parsed.pattern : "",
+      thickness: VALID_THICKNESSES.includes(parsed.thickness) ? parsed.thickness : "",
     };
 
     return NextResponse.json(result);

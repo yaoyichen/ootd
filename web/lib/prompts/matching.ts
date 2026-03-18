@@ -6,6 +6,11 @@ export interface ItemMeta {
   style?: string | null;
   season?: string | null;
   occasion?: string | null;
+  material?: string | null;
+  fit?: string | null;
+  pattern?: string | null;
+  thickness?: string | null;
+  description?: string | null;
 }
 
 export function buildMatchingPrompt(
@@ -14,7 +19,7 @@ export function buildMatchingPrompt(
   weatherContext?: string
 ): string {
   const formatItem = (i: ItemMeta) =>
-    `  - id="${i.id}" ${i.name}${i.color ? ` 颜色:${i.color}` : ""}${i.style ? ` 风格:${i.style}` : ""}${i.season ? ` 季节:${i.season}` : ""}${i.occasion ? ` 场合:${i.occasion}` : ""}`;
+    `  - id="${i.id}" ${i.name}${i.color ? ` 颜色:${i.color}` : ""}${i.material ? ` 材质:${i.material}` : ""}${i.fit ? ` 版型:${i.fit}` : ""}${i.pattern ? ` 图案:${i.pattern}` : ""}${i.thickness ? ` 厚度:${i.thickness}` : ""}${i.style ? ` 风格:${i.style}` : ""}${i.season ? ` 季节:${i.season}` : ""}${i.occasion ? ` 场合:${i.occasion}` : ""}${i.description ? ` 描述:${i.description}` : ""}`;
 
   const weatherBlock = weatherContext
     ? `\n【天气信息】\n${weatherContext}\n`

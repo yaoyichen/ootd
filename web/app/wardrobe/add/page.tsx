@@ -13,6 +13,11 @@ const CATEGORIES = [
   { value: "ACCESSORY", label: "配饰" },
 ];
 
+const MATERIALS = ["棉", "牛仔", "丝绸", "羊毛", "涤纶", "皮革", "麻", "雪纺", "针织", "灯芯绒"];
+const FITS = ["修身", "宽松", "常规", "oversize"];
+const PATTERNS = ["纯色", "条纹", "格纹", "印花", "碎花", "波点", "拼接"];
+const THICKNESSES = ["薄", "适中", "厚"];
+
 const SEASONS = ["春", "夏", "秋", "冬", "四季"];
 const OCCASIONS = ["日常", "上班", "约会", "运动", "正式", "出行"];
 
@@ -49,9 +54,11 @@ function AddItemForm() {
     style: "",
     season: "",
     occasion: "",
-    brand: "",
-    price: "",
-    notes: "",
+    material: "",
+    fit: "",
+    pattern: "",
+    thickness: "",
+    description: "",
   });
 
   const recognizeImage = useCallback(async (dataUrl: string) => {
@@ -72,6 +79,10 @@ function AddItemForm() {
         style: prev.style || result.style || "",
         season: prev.season || result.season || "",
         occasion: prev.occasion || result.occasion || "",
+        material: prev.material || result.material || "",
+        fit: prev.fit || result.fit || "",
+        pattern: prev.pattern || result.pattern || "",
+        thickness: prev.thickness || result.thickness || "",
       }));
     } catch {
       // silent fail — user can fill manually
@@ -180,7 +191,10 @@ function AddItemForm() {
         style: r.style || prev.style,
         season: r.season || prev.season,
         occasion: r.occasion || prev.occasion,
-        price: data.price || prev.price,
+        material: r.material || prev.material,
+        fit: r.fit || prev.fit,
+        pattern: r.pattern || prev.pattern,
+        thickness: r.thickness || prev.thickness,
       }));
     } catch {
       setImportError("网络错误，请重试");
@@ -210,7 +224,6 @@ function AddItemForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
-          price: form.price ? parseFloat(form.price) : undefined,
           imagePath,
           originalImagePath: originalPath,
           imageHash: imageHash,
@@ -503,7 +516,7 @@ function AddItemForm() {
               </div>
             </div>
 
-            {/* Color + Brand row */}
+            {/* Color + Material row */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#1D1D1F" }}>颜色</label>
@@ -517,12 +530,12 @@ function AddItemForm() {
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#1D1D1F" }}>品牌</label>
+                <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#1D1D1F" }}>材质</label>
                 <input
                   type="text"
-                  value={form.brand}
-                  onChange={(e) => updateField("brand", e.target.value)}
-                  placeholder="如：优衣库"
+                  value={form.material}
+                  onChange={(e) => updateField("material", e.target.value)}
+                  placeholder="如：棉"
                   className="w-full px-4 py-3 rounded-xl text-sm outline-none"
                   style={{ background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.06)", color: "#1D1D1F" }}
                 />
@@ -569,28 +582,75 @@ function AddItemForm() {
               </div>
             </div>
 
-            {/* Price */}
+            {/* Fit */}
             <div>
-              <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#1D1D1F" }}>价格</label>
-              <input
-                type="number"
-                value={form.price}
-                onChange={(e) => updateField("price", e.target.value)}
-                placeholder="购入价格（元）"
-                className="w-full px-4 py-3 rounded-xl text-sm outline-none"
-                style={{ background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.06)", color: "#1D1D1F" }}
-              />
+              <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#1D1D1F" }}>版型</label>
+              <div className="flex flex-wrap gap-2">
+                {FITS.map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => updateField("fit", form.fit === f ? "" : f)}
+                    className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
+                    style={{
+                      color: form.fit === f ? "#F27C88" : "#6E6E73",
+                      background: form.fit === f ? "rgba(242,124,136,0.1)" : "rgba(0,0,0,0.04)",
+                    }}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Notes */}
+            {/* Pattern */}
             <div>
-              <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#1D1D1F" }}>备注</label>
-              <textarea
-                value={form.notes}
-                onChange={(e) => updateField("notes", e.target.value)}
-                placeholder="任何补充信息..."
-                rows={3}
-                className="w-full px-4 py-3 rounded-xl text-sm outline-none resize-none"
+              <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#1D1D1F" }}>图案</label>
+              <div className="flex flex-wrap gap-2">
+                {PATTERNS.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => updateField("pattern", form.pattern === p ? "" : p)}
+                    className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
+                    style={{
+                      color: form.pattern === p ? "#F27C88" : "#6E6E73",
+                      background: form.pattern === p ? "rgba(242,124,136,0.1)" : "rgba(0,0,0,0.04)",
+                    }}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Thickness */}
+            <div>
+              <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#1D1D1F" }}>厚度</label>
+              <div className="flex flex-wrap gap-2">
+                {THICKNESSES.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => updateField("thickness", form.thickness === t ? "" : t)}
+                    className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
+                    style={{
+                      color: form.thickness === t ? "#F27C88" : "#6E6E73",
+                      background: form.thickness === t ? "rgba(242,124,136,0.1)" : "rgba(0,0,0,0.04)",
+                    }}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#1D1D1F" }}>描述</label>
+              <input
+                type="text"
+                value={form.description}
+                onChange={(e) => updateField("description", e.target.value)}
+                placeholder="如：V领开衫，金属纽扣"
+                className="w-full px-4 py-3 rounded-xl text-sm outline-none"
                 style={{ background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.06)", color: "#1D1D1F" }}
               />
             </div>

@@ -1,7 +1,7 @@
 # 数据库参考文档
 
 **技术栈**：Prisma 7 + SQLite + better-sqlite3 adapter
-**更新日期**：2026-03-17（v5：Item 新增 imageHash + originalImagePath，支持重复上传检测）
+**更新日期**：2026-03-19（v6：Item 去掉 brand/price/purchaseDate/notes，新增 material/fit/pattern/thickness/description）
 
 ---
 
@@ -102,10 +102,15 @@ if (process.env.NODE_ENV !== "production") {
 | style | String? | 否 | — | 风格 |
 | season | String? | 否 | — | 季节（春/夏/秋/冬/四季） |
 | occasion | String? | 否 | — | 场合（日常/上班/约会/运动/正式/出行） |
-| brand | String? | 否 | — | 品牌 |
-| price | Float? | 否 | — | 购入价格 |
-| purchaseDate | String? | 否 | — | 购入日期 |
-| notes | String? | 否 | — | 备注 |
+| brand | String? | 否 | — | 品牌（已废弃） |
+| price | Float? | 否 | — | 购入价格（已废弃） |
+| purchaseDate | String? | 否 | — | 购入日期（已废弃） |
+| notes | String? | 否 | — | 备注（已废弃） |
+| material | String? | 否 | — | 材质（棉/牛仔/丝绸/羊毛/涤纶/皮革/麻/雪纺/针织/灯芯绒） |
+| fit | String? | 否 | — | 版型（修身/宽松/常规/oversize） |
+| pattern | String? | 否 | — | 图案（纯色/条纹/格纹/印花/碎花/波点/拼接） |
+| thickness | String? | 否 | — | 厚度（薄/适中/厚） |
+| description | String? | 否 | — | 简短描述（如"V领开衫，金属纽扣"） |
 | imagePath | String | 是 | — | 抠图后的图片路径（如 `/uploads/items/xxx.png`） |
 | originalImagePath | String? | 否 | — | 原始上传图片路径（如 `/uploads/items-original/xxx.jpg`） |
 | imageHash | String? | 否 | — | 原始图片 SHA-256 哈希，用于检测重复上传 |
@@ -257,7 +262,7 @@ JSON 字符串，包含五个评分维度（每项 1–100 分）：
 | 参数 | 类型 | 说明 |
 |------|------|------|
 | category | string | 按分类筛选，如 `?category=TOP` |
-| q | string | 按名称/品牌模糊搜索，如 `?q=优衣库` |
+| q | string | 按名称/描述模糊搜索，如 `?q=V领` |
 
 **POST /api/items** 请求体：
 
@@ -267,11 +272,13 @@ JSON 字符串，包含五个评分维度（每项 1–100 分）：
   "category": "TOP",           // 必填
   "imagePath": "/uploads/items/xxx.jpg",  // 必填
   "color": "白色",             // 可选
-  "brand": "优衣库",           // 可选
   "season": "夏",              // 可选
   "occasion": "日常",          // 可选
-  "price": 99.0,               // 可选
-  "notes": "..."               // 可选
+  "material": "棉",            // 可选
+  "fit": "常规",               // 可选
+  "pattern": "纯色",           // 可选
+  "thickness": "薄",           // 可选
+  "description": "圆领短袖"    // 可选
 }
 ```
 
