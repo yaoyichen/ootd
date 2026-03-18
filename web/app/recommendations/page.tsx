@@ -746,11 +746,6 @@ function RecommendationCard({
             <RadarChart dims={rec.scoreDims} score={rec.score} size={150} />
           </div>
         )}
-        {rec.reason && (
-          <p className="text-xs" style={{ color: "#6E6E73" }}>
-            {rec.reason}
-          </p>
-        )}
         {rec.evaluation && (
           <p
             className="text-xs leading-relaxed"
