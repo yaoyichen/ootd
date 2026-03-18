@@ -61,12 +61,24 @@ export async function POST(req: NextRequest) {
     const hasTop = !!top_garment_image;
     const hasBottom = !!bottom_garment_image;
 
+    // Fetch item names for better prompt context
+    let topName: string | undefined;
+    let bottomName: string | undefined;
+    if (topItemId) {
+      const topItem = await prisma.item.findUnique({ where: { id: topItemId }, select: { name: true } });
+      if (topItem) topName = topItem.name;
+    }
+    if (bottomItemId) {
+      const bottomItem = await prisma.item.findUnique({ where: { id: bottomItemId }, select: { name: true } });
+      if (bottomItem) bottomName = bottomItem.name;
+    }
+
     const content: { image?: string; text?: string }[] = [
       { image: resolveImage(person_image) },
     ];
     if (hasTop) content.push({ image: resolveImage(top_garment_image) });
     if (hasBottom) content.push({ image: resolveImage(bottom_garment_image) });
-    content.push({ text: buildTryonPrompt(hasTop, hasBottom) });
+    content.push({ text: buildTryonPrompt({ hasTop, hasBottom, topName, bottomName }) });
 
     const res = await fetch(API_URL, {
       method: "POST",

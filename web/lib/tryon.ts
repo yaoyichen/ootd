@@ -81,6 +81,18 @@ export async function generateTryon(input: TryonInput): Promise<TryonResult> {
   const hasTop = !!input.topImagePath;
   const hasBottom = !!input.bottomImagePath;
 
+  // Fetch item names for better prompt context
+  let topName: string | undefined;
+  let bottomName: string | undefined;
+  if (topId) {
+    const topItem = await prisma.item.findUnique({ where: { id: topId }, select: { name: true } });
+    if (topItem) topName = topItem.name;
+  }
+  if (bottomId) {
+    const bottomItem = await prisma.item.findUnique({ where: { id: bottomId }, select: { name: true } });
+    if (bottomItem) bottomName = bottomItem.name;
+  }
+
   if (!hasTop && !hasBottom) {
     throw new Error("至少提供一张服装图片");
   }
@@ -90,7 +102,7 @@ export async function generateTryon(input: TryonInput): Promise<TryonResult> {
   ];
   if (hasTop) content.push({ image: resolveImage(input.topImagePath!) });
   if (hasBottom) content.push({ image: resolveImage(input.bottomImagePath!) });
-  content.push({ text: buildTryonPrompt(hasTop, hasBottom) });
+  content.push({ text: buildTryonPrompt({ hasTop, hasBottom, topName, bottomName }) });
 
   const res = await fetch(API_URL, {
     method: "POST",
