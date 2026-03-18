@@ -260,18 +260,88 @@ export default function FavoritesPage() {
                   </button>
 
                   <div className="p-4">
-                    {/* Radar chart + evaluation */}
+                    {/* Score + evaluation */}
                     {outfit.score != null && dims && (
-                      <div className="flex items-center gap-3 mb-3">
-                        <RadarChart dims={dims} score={outfit.score} size={120} />
+                      <div className="mb-3">
+                        {/* Evaluation text - the hero */}
                         {outfit.evaluation && (
-                          <p
-                            className="flex-1 text-xs leading-relaxed line-clamp-4"
-                            style={{ color: "#6E6E73" }}
+                          <div
+                            className="eval-card relative rounded-2xl px-4 py-3 mb-3"
+                            style={{
+                              background: "linear-gradient(135deg, rgba(242,124,136,0.06), rgba(250,205,208,0.12))",
+                              border: "1px solid rgba(242,124,136,0.12)",
+                              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6), 0 2px 12px rgba(242,124,136,0.06)",
+                            }}
                           >
-                            {outfit.evaluation}
-                          </p>
+                            <span
+                              className="absolute -top-2 -left-1 text-2xl leading-none select-none"
+                              style={{ color: "rgba(242,124,136,0.3)" }}
+                            >
+                              &ldquo;
+                            </span>
+                            <p
+                              className="text-[13px] leading-relaxed font-medium"
+                              style={{ color: "#1D1D1F" }}
+                              dangerouslySetInnerHTML={{ __html: outfit.evaluation }}
+                            />
+                          </div>
                         )}
+                        {/* Score badge + mini radar row */}
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+                            style={{
+                              background: outfit.score >= 80
+                                ? "linear-gradient(135deg, rgba(52,199,89,0.1), rgba(52,199,89,0.05))"
+                                : outfit.score >= 60
+                                ? "linear-gradient(135deg, rgba(242,124,136,0.1), rgba(242,124,136,0.05))"
+                                : "linear-gradient(135deg, rgba(255,59,48,0.1), rgba(255,59,48,0.05))",
+                              border: `1px solid ${
+                                outfit.score >= 80
+                                  ? "rgba(52,199,89,0.15)"
+                                  : outfit.score >= 60
+                                  ? "rgba(242,124,136,0.15)"
+                                  : "rgba(255,59,48,0.15)"
+                              }`,
+                            }}
+                          >
+                            <span
+                              className="text-lg font-bold"
+                              style={{
+                                color: outfit.score >= 80 ? "#34C759" : outfit.score >= 60 ? "#F27C88" : "#FF3B30",
+                              }}
+                            >
+                              {outfit.score}
+                            </span>
+                            <span className="text-[10px] font-medium" style={{ color: "#AEAEB2" }}>分</span>
+                          </div>
+                          <div className="flex-1 flex gap-1">
+                            {DIM_LABELS.map((d) => {
+                              const val = dims[d.key];
+                              return (
+                                <div key={d.key} className="flex-1 flex flex-col items-center gap-0.5">
+                                  <div
+                                    className="w-full rounded-full overflow-hidden"
+                                    style={{ height: 3, background: "rgba(0,0,0,0.04)" }}
+                                  >
+                                    <div
+                                      className="h-full rounded-full"
+                                      style={{
+                                        width: `${val}%`,
+                                        background: val >= 80
+                                          ? "linear-gradient(90deg, #34C759, #30D158)"
+                                          : val >= 60
+                                          ? "linear-gradient(90deg, #F27C88, #FACDD0)"
+                                          : "linear-gradient(90deg, #FF3B30, #FF6961)",
+                                      }}
+                                    />
+                                  </div>
+                                  <span className="text-[8px]" style={{ color: "#AEAEB2" }}>{d.label}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
                       </div>
                     )}
 

@@ -647,9 +647,7 @@ export default function TryonPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold mb-1" style={{ color: "#1D1D1F" }}>AI 穿搭评分</p>
-                      <p className="text-xs leading-relaxed" style={{ color: "#6E6E73" }}>
-                        {evaluation}
-                      </p>
+                      <p className="text-xs leading-relaxed" style={{ color: "#6E6E73" }} dangerouslySetInnerHTML={{ __html: evaluation! }} />
                     </div>
                   </div>
                 ) : (

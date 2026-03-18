@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, Suspense } from "react";
+import { useState, useRef, useCallback, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 
@@ -123,20 +123,27 @@ function AddItemForm() {
     [handleFile]
   );
 
-  const handlePaste = useCallback(
-    (e: React.ClipboardEvent) => {
+  // Global paste listener so Ctrl+V works regardless of focus
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      // Don't intercept paste in text inputs
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+
       const items = e.clipboardData?.items;
       if (!items) return;
       for (const item of items) {
         if (item.type.startsWith("image/")) {
+          e.preventDefault();
           const file = item.getAsFile();
           if (file) handleFile(file);
           return;
         }
       }
-    },
-    [handleFile]
-  );
+    };
+    document.addEventListener("paste", handlePaste);
+    return () => document.removeEventListener("paste", handlePaste);
+  }, [handleFile]);
 
   const handleTaobaoImport = useCallback(async () => {
     if (!taobaoInput.trim()) return;
@@ -406,7 +413,7 @@ function AddItemForm() {
               onClick={() => inputRef.current?.click()}
               onDrop={handleDrop}
               onDragOver={(e) => e.preventDefault()}
-              onPaste={handlePaste}
+
             >
               {preview ? (
                 <div className="relative w-full h-full">
