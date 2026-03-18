@@ -638,9 +638,11 @@ function RadarChart({
 function RecommendationCard({
   rec,
   onToggleFavorite,
+  onPreviewImage,
 }: {
   rec: Recommendation;
   onToggleFavorite: (outfitId: string) => void;
+  onPreviewImage: (src: string, alt: string) => void;
 }) {
   return (
     <div
@@ -672,7 +674,10 @@ function RecommendationCard({
         <div className="absolute bottom-3 inset-x-3 flex items-end justify-between">
           <div className="flex gap-1.5">
             {rec.topItem && (
-              <div className="w-10 h-10 rounded-lg overflow-hidden border-2 border-white/40">
+              <button
+                onClick={() => onPreviewImage(rec.topItem!.imagePath, rec.topItem!.name)}
+                className="w-10 h-10 rounded-lg overflow-hidden border-2 border-white/40 cursor-pointer hover:border-white/70 transition-all"
+              >
                 <Image
                   src={rec.topItem.imagePath}
                   alt={rec.topItem.name}
@@ -680,10 +685,13 @@ function RecommendationCard({
                   height={40}
                   className="object-cover w-full h-full"
                 />
-              </div>
+              </button>
             )}
             {rec.bottomItem && (
-              <div className="w-10 h-10 rounded-lg overflow-hidden border-2 border-white/40">
+              <button
+                onClick={() => onPreviewImage(rec.bottomItem!.imagePath, rec.bottomItem!.name)}
+                className="w-10 h-10 rounded-lg overflow-hidden border-2 border-white/40 cursor-pointer hover:border-white/70 transition-all"
+              >
                 <Image
                   src={rec.bottomItem.imagePath}
                   alt={rec.bottomItem.name}
@@ -691,7 +699,7 @@ function RecommendationCard({
                   height={40}
                   className="object-cover w-full h-full"
                 />
-              </div>
+              </button>
             )}
           </div>
           <button
@@ -776,6 +784,7 @@ export default function RecommendationsPage() {
   const [quickLoading, setQuickLoading] = useState(false);
   const [quickOpen, setQuickOpen] = useState(false);
   const [quickRemaining, setQuickRemaining] = useState<number | null>(null);
+  const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
   const [cityId, setCityId] = useState(DEFAULT_CITY_ID);
   const [cityName, setCityName] = useState(
     PRESET_CITIES.find((c) => c.id === DEFAULT_CITY_ID)?.name || "杭州"
@@ -1200,14 +1209,20 @@ export default function RecommendationsPage() {
                         {/* Item thumbnails */}
                         <div className="absolute bottom-2 left-2 flex gap-1">
                           {rec.topItem && (
-                            <div className="w-8 h-8 rounded-md overflow-hidden border border-white/40">
+                            <button
+                              onClick={() => setPreviewImage({ src: rec.topItem!.imagePath, alt: rec.topItem!.name })}
+                              className="w-8 h-8 rounded-md overflow-hidden border border-white/40 cursor-pointer hover:border-white/70 transition-all"
+                            >
                               <Image src={rec.topItem.imagePath} alt={rec.topItem.name} width={32} height={32} className="object-cover w-full h-full" />
-                            </div>
+                            </button>
                           )}
                           {rec.bottomItem && (
-                            <div className="w-8 h-8 rounded-md overflow-hidden border border-white/40">
+                            <button
+                              onClick={() => setPreviewImage({ src: rec.bottomItem!.imagePath, alt: rec.bottomItem!.name })}
+                              className="w-8 h-8 rounded-md overflow-hidden border border-white/40 cursor-pointer hover:border-white/70 transition-all"
+                            >
                               <Image src={rec.bottomItem.imagePath} alt={rec.bottomItem.name} width={32} height={32} className="object-cover w-full h-full" />
-                            </div>
+                            </button>
                           )}
                         </div>
                       </div>
@@ -1571,6 +1586,7 @@ export default function RecommendationsPage() {
                   key={rec.outfitId}
                   rec={rec}
                   onToggleFavorite={handleToggleFavorite}
+                  onPreviewImage={(src, alt) => setPreviewImage({ src, alt })}
                 />
               ))}
             </div>
@@ -1639,6 +1655,38 @@ export default function RecommendationsPage() {
           </div>
         )}
       </main>
+
+      {/* Image preview modal */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}
+          onClick={() => setPreviewImage(null)}
+        >
+          <div className="relative max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <Image
+              src={previewImage.src}
+              alt={previewImage.alt}
+              width={400}
+              height={400}
+              className="w-full h-auto rounded-2xl"
+              style={{ background: "#fff" }}
+            />
+            <p className="text-center text-sm font-medium mt-3" style={{ color: "#fff" }}>
+              {previewImage.alt}
+            </p>
+            <button
+              onClick={() => setPreviewImage(null)}
+              className="absolute -top-3 -right-3 w-8 h-8 rounded-full flex items-center justify-center"
+              style={{ background: "rgba(255,255,255,0.9)" }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1D1D1F" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
