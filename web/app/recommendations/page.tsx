@@ -206,6 +206,7 @@ function WeatherCard({
   const [query, setQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -227,6 +228,15 @@ function WeatherCard({
     }
   }, [open]);
 
+  // Scroll active day into view
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    const activeEl = scrollRef.current.querySelector("[data-active='true']") as HTMLElement;
+    if (activeEl) {
+      activeEl.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    }
+  }, [targetDay]);
+
   // Local filtering - instant, no API calls
   const filteredCities = useMemo(() => {
     const q = query.trim();
@@ -236,7 +246,8 @@ function WeatherCard({
     ).slice(0, 20);
   }, [query]);
 
-  const forecast = weather?.forecasts?.[targetDay];
+  const forecasts = weather?.forecasts || [];
+  const forecast = forecasts[targetDay];
   const clothingAdvice = forecast?.clothingAdvice;
 
   return (
@@ -244,138 +255,106 @@ function WeatherCard({
       className="glass rounded-2xl p-4 mb-6 transition-all duration-300"
       style={{ boxShadow: "0 1px 12px rgba(0,0,0,0.03)" }}
     >
-      {/* Top row: city + day switcher */}
-      <div className="flex items-center justify-between gap-3 mb-3">
-        {/* City dropdown */}
-        <div className="relative" ref={dropdownRef}>
-          <button
-            onClick={() => setOpen(!open)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+      {/* City selector */}
+      <div className="flex items-center gap-2 mb-3" ref={dropdownRef}>
+        <button
+          onClick={() => setOpen(!open)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+          style={{
+            background: "rgba(242,124,136,0.08)",
+            color: "#F27C88",
+            border: "1px solid rgba(242,124,136,0.15)",
+          }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+            <circle cx="12" cy="10" r="3" />
+          </svg>
+          {cityName || "选择城市"}
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+        {targetDay === 0 && weather && (
+          <span className="text-[11px]" style={{ color: "#AEAEB2" }}>
+            实时 {weather.temp}
+          </span>
+        )}
+        {open && (
+          <div
+            className="absolute top-full left-4 mt-1.5 z-30 rounded-xl overflow-hidden"
             style={{
-              background: "rgba(242,124,136,0.08)",
-              color: "#F27C88",
-              border: "1px solid rgba(242,124,136,0.15)",
+              background: "rgba(255,255,255,0.98)",
+              backdropFilter: "blur(20px)",
+              boxShadow: "0 4px 24px rgba(0,0,0,0.1)",
+              border: "1px solid rgba(0,0,0,0.06)",
+              minWidth: 180,
             }}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-              <circle cx="12" cy="10" r="3" />
-            </svg>
-            {cityName || "选择城市"}
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-          </button>
-          {open && (
-            <div
-              className="absolute top-full left-0 mt-1.5 z-30 rounded-xl overflow-hidden"
-              style={{
-                background: "rgba(255,255,255,0.98)",
-                backdropFilter: "blur(20px)",
-                boxShadow: "0 4px 24px rgba(0,0,0,0.1)",
-                border: "1px solid rgba(0,0,0,0.06)",
-                minWidth: 180,
-              }}
-            >
-              {/* Search input */}
-              <div className="px-3 pt-2.5 pb-1.5">
-                <div
-                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg"
-                  style={{ background: "rgba(0,0,0,0.04)" }}
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#AEAEB2" strokeWidth="2" strokeLinecap="round">
-                    <circle cx="11" cy="11" r="8" />
-                    <path d="M21 21l-4.35-4.35" />
-                  </svg>
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="搜索城市..."
-                    className="flex-1 bg-transparent text-xs outline-none placeholder:text-[#AEAEB2]"
-                    style={{ color: "#1D1D1F" }}
-                  />
-                  {query && (
-                    <button
-                      onClick={() => { setQuery(""); inputRef.current?.focus(); }}
-                      className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{ background: "rgba(0,0,0,0.1)" }}
-                    >
-                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" strokeWidth="3" strokeLinecap="round">
-                        <path d="M18 6 6 18M6 6l12 12" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              </div>
-              {/* City list */}
-              <div className="max-h-48 overflow-y-auto py-1">
-                {filteredCities.length === 0 ? (
-                  <div className="px-3.5 py-3 text-xs text-center" style={{ color: "#AEAEB2" }}>
-                    未找到匹配城市
-                  </div>
-                ) : (
-                  filteredCities.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => {
-                        onCityChange(c.id, c.name);
-                        setOpen(false);
-                        setQuery("");
-                      }}
-                      className="w-full text-left px-3.5 py-2 text-xs transition-colors hover:bg-black/[0.03]"
-                      style={{
-                        color: c.id === cityId ? "#F27C88" : "#1D1D1F",
-                        fontWeight: c.id === cityId ? 600 : 400,
-                      }}
-                    >
-                      {c.name}
-                      <span className="ml-1" style={{ color: "#AEAEB2", fontSize: 10 }}>{c.adm1}</span>
-                    </button>
-                  ))
+            <div className="px-3 pt-2.5 pb-1.5">
+              <div
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg"
+                style={{ background: "rgba(0,0,0,0.04)" }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#AEAEB2" strokeWidth="2" strokeLinecap="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="搜索城市..."
+                  className="flex-1 bg-transparent text-xs outline-none placeholder:text-[#AEAEB2]"
+                  style={{ color: "#1D1D1F" }}
+                />
+                {query && (
+                  <button
+                    onClick={() => { setQuery(""); inputRef.current?.focus(); }}
+                    className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ background: "rgba(0,0,0,0.1)" }}
+                  >
+                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" strokeWidth="3" strokeLinecap="round">
+                      <path d="M18 6 6 18M6 6l12 12" />
+                    </svg>
+                  </button>
                 )}
               </div>
             </div>
-          )}
-        </div>
-
-        {/* Day switcher tabs */}
-        <div
-          className="flex items-center rounded-xl p-0.5 gap-0.5"
-          style={{ background: "rgba(0,0,0,0.04)" }}
-        >
-          {(weather?.forecasts || []).map((f, i) => {
-            const active = i === targetDay;
-            return (
-              <button
-                key={f.date}
-                onClick={() => onTargetDayChange(i)}
-                className="relative flex flex-col items-center px-3 py-1 rounded-lg transition-all duration-200"
-                style={{
-                  color: active ? "#fff" : "#6E6E73",
-                  background: active
-                    ? "linear-gradient(135deg, #F27C88, #FACDD0)"
-                    : "transparent",
-                  boxShadow: active ? "0 2px 8px rgba(242,124,136,0.25)" : "none",
-                }}
-              >
-                <span className="text-[11px] font-semibold leading-tight">{f.dayLabel}</span>
-                <span
-                  className="text-[9px] leading-tight"
-                  style={{ opacity: active ? 0.85 : 0.6 }}
-                >
-                  {f.weekday} {f.dateShort}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+            <div className="max-h-48 overflow-y-auto py-1">
+              {filteredCities.length === 0 ? (
+                <div className="px-3.5 py-3 text-xs text-center" style={{ color: "#AEAEB2" }}>
+                  未找到匹配城市
+                </div>
+              ) : (
+                filteredCities.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => {
+                      onCityChange(c.id, c.name);
+                      setOpen(false);
+                      setQuery("");
+                    }}
+                    className="w-full text-left px-3.5 py-2 text-xs transition-colors hover:bg-black/[0.03]"
+                    style={{
+                      color: c.id === cityId ? "#F27C88" : "#1D1D1F",
+                      fontWeight: c.id === cityId ? 600 : 400,
+                    }}
+                  >
+                    {c.name}
+                    <span className="ml-1" style={{ color: "#AEAEB2", fontSize: 10 }}>{c.adm1}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Weather content */}
+      {/* Horizontal scrollable calendar strip */}
       {loading ? (
-        <div className="flex items-center justify-center gap-2 py-3">
+        <div className="flex items-center justify-center gap-2 py-6">
           <div
             className="w-4 h-4 rounded-full"
             style={{
@@ -386,50 +365,91 @@ function WeatherCard({
           />
           <span className="text-xs" style={{ color: "#AEAEB2" }}>获取天气中...</span>
         </div>
-      ) : forecast ? (
-        <div className="flex items-center gap-3">
-          <span className="text-3xl leading-none">{getWeatherIcon(forecast.weatherDay)}</span>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold tracking-tight" style={{ color: "#1D1D1F" }}>
-                {forecast.tempRange}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="text-xs" style={{ color: "#6E6E73" }}>
-                {forecast.weatherDay}{forecast.weatherDay !== forecast.weatherNight ? ` → ${forecast.weatherNight}` : ""}
-              </span>
-              {targetDay === 0 && weather && (
-                <>
-                  <span className="text-[10px]" style={{ color: "#AEAEB2" }}>·</span>
-                  <span className="text-[10px]" style={{ color: "#AEAEB2" }}>
-                    实时 {weather.temp}
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
-          {/* Mini forecast cards for the other days */}
-          <div className="flex gap-1.5">
-            {(weather?.forecasts || []).map((f, i) => {
-              if (i === targetDay) return null;
+      ) : forecasts.length > 0 ? (
+        <>
+          <div
+            ref={scrollRef}
+            data-calendar-strip
+            className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            <style>{`[data-calendar-strip]::-webkit-scrollbar { display: none; }`}</style>
+            {forecasts.map((f, i) => {
+              const active = i === targetDay;
               return (
                 <button
                   key={f.date}
+                  data-active={active}
                   onClick={() => onTargetDayChange(i)}
-                  className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg transition-all hover:bg-black/[0.03]"
+                  className="flex flex-col items-center flex-shrink-0 rounded-2xl px-3 py-2.5 transition-all duration-200"
+                  style={{
+                    minWidth: 64,
+                    background: active
+                      ? "linear-gradient(135deg, #F27C88, #F9A8B0)"
+                      : "rgba(0,0,0,0.03)",
+                    boxShadow: active ? "0 2px 12px rgba(242,124,136,0.3)" : "none",
+                    border: active ? "none" : "1px solid rgba(0,0,0,0.04)",
+                  }}
                 >
-                  <span className="text-[10px] font-medium" style={{ color: "#AEAEB2" }}>{f.dayLabel}</span>
-                  <span className="text-sm leading-none">{getWeatherIcon(f.weatherDay)}</span>
-                  <span className="text-[10px] font-medium" style={{ color: "#6E6E73" }}>
+                  <span
+                    className="text-[11px] font-semibold leading-tight"
+                    style={{ color: active ? "#fff" : "#6E6E73" }}
+                  >
+                    {f.weekday}
+                  </span>
+                  <span
+                    className="text-[10px] leading-tight mt-0.5"
+                    style={{ color: active ? "rgba(255,255,255,0.8)" : "#AEAEB2" }}
+                  >
+                    {f.dateShort}
+                  </span>
+                  <span className="text-xl leading-none my-1.5">
+                    {getWeatherIcon(f.weatherDay)}
+                  </span>
+                  <span
+                    className="text-[11px] font-medium leading-tight"
+                    style={{ color: active ? "#fff" : "#1D1D1F" }}
+                  >
                     {f.tempMin}~{f.tempMax}°
                   </span>
-                  <span className="text-[9px]" style={{ color: "#AEAEB2" }}>{f.weekday}</span>
+                  {(i <= 2) && (
+                    <span
+                      className="text-[9px] mt-1 px-1.5 py-0.5 rounded-full font-medium"
+                      style={{
+                        background: active ? "rgba(255,255,255,0.25)" : "rgba(242,124,136,0.08)",
+                        color: active ? "#fff" : "#F27C88",
+                      }}
+                    >
+                      {f.dayLabel}
+                    </span>
+                  )}
                 </button>
               );
             })}
           </div>
-        </div>
+
+          {/* Selected day detail */}
+          {forecast && (
+            <div className="flex items-center gap-3 mt-3 pt-3" style={{ borderTop: "1px solid rgba(0,0,0,0.04)" }}>
+              <span className="text-3xl leading-none">{getWeatherIcon(forecast.weatherDay)}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xl font-bold tracking-tight" style={{ color: "#1D1D1F" }}>
+                    {forecast.tempRange}
+                  </span>
+                  <span className="text-xs font-medium" style={{ color: "#F27C88" }}>
+                    {forecast.dayLabel}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-xs" style={{ color: "#6E6E73" }}>
+                    {forecast.weatherDay}{forecast.weatherDay !== forecast.weatherNight ? ` → ${forecast.weatherNight}` : ""}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       ) : weather ? (
         <div className="flex items-center gap-3">
           <span className="text-xl leading-none">{getWeatherIcon(weather.weather)}</span>
@@ -732,9 +752,11 @@ function RecommendationCard({
           </p>
         )}
         {rec.evaluation && (
-          <p className="text-xs leading-relaxed" style={{ color: "#1D1D1F" }}>
-            {rec.evaluation}
-          </p>
+          <p
+            className="text-xs leading-relaxed"
+            style={{ color: "#1D1D1F" }}
+            dangerouslySetInnerHTML={{ __html: rec.evaluation }}
+          />
         )}
       </div>
     </div>
@@ -803,6 +825,8 @@ export default function RecommendationsPage() {
   };
 
   const currentPerson = persons.find((p) => p.id === selectedPerson);
+  const targetForecast = weather?.forecasts?.[targetDay];
+  const targetDayLabel = targetForecast?.dayLabel || (targetDay === 0 ? "今天" : targetDay === 1 ? "明天" : "后天");
 
   useEffect(() => {
     fetch("/api/persons")
@@ -815,6 +839,15 @@ export default function RecommendationsPage() {
         else if (data.length > 0) setSelectedPerson(data[0].id);
       });
   }, []);
+
+  // Sync date with targetDay
+  useEffect(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + targetDay);
+    setDate(d.toISOString().slice(0, 10));
+    setPhase("loading");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetDay]);
 
   const loadExisting = useCallback(async () => {
     try {
@@ -1269,14 +1302,14 @@ export default function RecommendationsPage() {
                 WebkitTextFillColor: "transparent",
               }}
             >
-              {targetDay === 0 ? "今日" : targetDay === 1 ? "明日" : "后天"}
+              {targetDayLabel}
             </span>
             {" "}穿搭推荐
           </h1>
           <p className="mt-2 text-sm" style={{ color: "#6E6E73" }}>
             {targetDay === 0
               ? "AI 从你的衣橱中智能搭配，精选最佳方案"
-              : `根据${targetDay === 1 ? "明天" : "后天"}天气预报，提前为你准备穿搭`}
+              : `根据${targetDayLabel}天气预报，提前为你准备穿搭`}
           </p>
         </div>
 
@@ -1445,12 +1478,12 @@ export default function RecommendationsPage() {
                 className="text-sm font-medium"
                 style={{ color: "#1D1D1F" }}
               >
-                {targetDay === 0 ? "今日" : targetDay === 1 ? "明日" : "后天"}还没有穿搭推荐
+                {targetDayLabel}还没有穿搭推荐
               </p>
               <p className="text-xs mt-1" style={{ color: "#AEAEB2" }}>
                 {targetDay === 0
                   ? "AI 将从你的衣橱中智能匹配，生成 3 套最佳穿搭"
-                  : `根据${targetDay === 1 ? "明天" : "后天"}天气预报，提前智能搭配 3 套穿搭`}
+                  : `根据${targetDayLabel}天气预报，提前智能搭配 3 套穿搭`}
               </p>
             </div>
 
@@ -1472,7 +1505,7 @@ export default function RecommendationsPage() {
                   disabled={!selectedPerson}
                   className="btn-gradient px-8 py-3.5 rounded-full text-sm font-semibold tracking-wide"
                 >
-                  {targetDay === 0 ? "生成今日推荐" : targetDay === 1 ? "生成明日推荐" : "生成后天推荐"}
+                  生成{targetDayLabel}推荐
                 </button>
                 <button
                   onClick={handleQuickOutfit}

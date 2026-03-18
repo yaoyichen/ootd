@@ -36,7 +36,7 @@ export interface WeatherData {
   locationId: string;
   now: WeatherNow;
   forecast: DailyForecast[];
-  clothing3d: ClothingIndex[];
+  clothing7d: ClothingIndex[];
 }
 
 export interface ForecastSummary {
@@ -119,8 +119,8 @@ export async function getWeatherNow(locationId: string): Promise<WeatherNow> {
   return data.now;
 }
 
-export async function getForecast3d(locationId: string): Promise<DailyForecast[]> {
-  const data = await fetchQWeather(API_HOST, "/v7/weather/3d", {
+export async function getForecast7d(locationId: string): Promise<DailyForecast[]> {
+  const data = await fetchQWeather(API_HOST, "/v7/weather/7d", {
     location: locationId,
     lang: "zh",
     unit: "m",
@@ -128,9 +128,9 @@ export async function getForecast3d(locationId: string): Promise<DailyForecast[]
   return data.daily || [];
 }
 
-export async function getClothingIndex3d(locationId: string): Promise<ClothingIndex[]> {
+export async function getClothingIndex7d(locationId: string): Promise<ClothingIndex[]> {
   try {
-    const data = await fetchQWeather(API_HOST, "/v7/indices/3d", {
+    const data = await fetchQWeather(API_HOST, "/v7/indices/7d", {
       location: locationId,
       type: "3",
       lang: "zh",
@@ -176,13 +176,13 @@ export async function getWeatherData(locationId: string, cityNameHint?: string):
   const city = PRESET_CITIES.find((c) => c.id === locationId);
   const cityName = city?.name ?? cityNameHint ?? locationId;
 
-  const [now, forecast, clothing3d] = await Promise.all([
+  const [now, forecast, clothing7d] = await Promise.all([
     getWeatherNow(locationId),
-    getForecast3d(locationId),
-    getClothingIndex3d(locationId),
+    getForecast7d(locationId),
+    getClothingIndex7d(locationId),
   ]);
 
-  const weatherData: WeatherData = { city: cityName, locationId, now, forecast, clothing3d };
+  const weatherData: WeatherData = { city: cityName, locationId, now, forecast, clothing7d };
 
   // 3. 写入缓存 + 清理过期数据
   const expiresAt = new Date(Date.now() + CACHE_TTL_DAYS * 86400000);
@@ -213,7 +213,7 @@ function getDayMeta(dateStr: string): { dayLabel: string; weekday: string; dateS
   const diff = Math.round((target.getTime() - today.getTime()) / 86400000);
   const weekday = WEEKDAYS[target.getDay()];
   const dateShort = `${target.getMonth() + 1}/${target.getDate()}`;
-  let dayLabel = dateStr;
+  let dayLabel = dateShort;
   if (diff === 0) dayLabel = "今天";
   else if (diff === 1) dayLabel = "明天";
   else if (diff === 2) dayLabel = "后天";
@@ -222,10 +222,10 @@ function getDayMeta(dateStr: string): { dayLabel: string; weekday: string; dateS
 
 export function toWeatherSummary(data: WeatherData): WeatherSummary {
   const today = data.forecast[0];
-  const todayClothing = data.clothing3d.find((c) => c.date === today?.fxDate);
+  const todayClothing = data.clothing7d.find((c) => c.date === today?.fxDate);
 
   const forecasts: ForecastSummary[] = data.forecast.map((f) => {
-    const clothing = data.clothing3d.find((c) => c.date === f.fxDate);
+    const clothing = data.clothing7d.find((c) => c.date === f.fxDate);
     const { dayLabel, weekday, dateShort } = getDayMeta(f.fxDate);
     return {
       date: f.fxDate,

@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
               send("progress", { step: "weather", message: "正在获取天气信息..." });
               const weatherData = await getWeatherData(locationId || DEFAULT_CITY_ID);
               const summary = toWeatherSummary(weatherData);
-              const dayOffset = Math.min(Math.max(targetDay, 0), 2);
+              const dayOffset = Math.min(Math.max(targetDay, 0), 6);
               weatherContext = buildWeatherPromptContext(summary, dayOffset);
               const targetForecast = summary.forecasts[dayOffset];
               const dayLabel = targetForecast?.dayLabel || "今天";
