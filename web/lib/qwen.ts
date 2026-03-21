@@ -93,8 +93,18 @@ export async function scoreOutfit(imagePath: string): Promise<ScoreResult> {
       }
     }
 
+    // Weighted score: boost the top dimension, dampen the lowest
+    const dimValues = DIM_KEYS.map((k) => dims[k]);
+    const maxDim = Math.max(...dimValues);
+    const minDim = Math.min(...dimValues);
+    const weights = dimValues.map((v) =>
+      v === maxDim ? 2 : v === minDim ? 0.5 : 1
+    );
+    const weightedSum = dimValues.reduce((s, v, i) => s + v * weights[i], 0);
+    const weightTotal = weights.reduce((s, w) => s + w, 0);
+
     const score = allValid
-      ? clampScore(DIM_KEYS.reduce((sum, k) => sum + dims[k], 0) / DIM_KEYS.length)
+      ? clampScore(weightedSum / weightTotal)
       : clampScore(Number(parsed.score) || 70);
 
     const evaluation = String(parsed.evaluation || "");

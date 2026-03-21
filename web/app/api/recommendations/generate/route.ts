@@ -12,7 +12,24 @@ function sseEvent(event: string, data: unknown): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+async function pMap<T, R>(
+  items: T[],
+  fn: (item: T, index: number) => Promise<R>,
+  concurrency: number
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let nextIndex = 0;
+
+  async function worker() {
+    while (nextIndex < items.length) {
+      const i = nextIndex++;
+      results[i] = await fn(items[i], i);
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => worker()));
+  return results;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -107,68 +124,79 @@ export async function POST(req: NextRequest) {
             count: combinations.length,
           });
 
-          // Step 2: Generate tryon images
-          const outfitResults: {
-            outfitId: string;
-            imagePath: string;
-            reason: string;
-            topItemId: string;
-            bottomItemId: string;
-            cached: boolean;
-          }[] = [];
+          // Step 2: Generate tryon images (concurrent with retry)
+          const concurrency = Number(process.env.DASHSCOPE_CONCURRENCY) || 2;
+          const retryDelay = Number(process.env.DASHSCOPE_RETRY_DELAY) || 3000;
+          let completedCount = 0;
+          send("progress", {
+            step: "generating",
+            message: `开始生成穿搭效果（共 ${combinations.length} 组）...`,
+            current: 0,
+            total: combinations.length,
+          });
 
-          for (let i = 0; i < combinations.length; i++) {
-            const combo = combinations[i];
-            send("progress", {
-              step: "generating",
-              message: `生成穿搭效果 ${i + 1}/${combinations.length}...`,
-              current: i + 1,
-              total: combinations.length,
-            });
+          const outfitResults = (
+            await pMap(
+              combinations,
+              async (combo, i) => {
+                const topItem = items.find((it) => it.id === combo.topItemId);
+                const bottomItem = items.find((it) => it.id === combo.bottomItemId);
 
-            const topItem = items.find((it) => it.id === combo.topItemId);
-            const bottomItem = items.find((it) => it.id === combo.bottomItemId);
+                if (!topItem || !bottomItem) return null;
 
-            if (!topItem || !bottomItem) continue;
+                const tryGenerate = () =>
+                  generateTryon({
+                    personImagePath: person.imagePath,
+                    topImagePath: topItem.imagePath,
+                    bottomImagePath: bottomItem.imagePath,
+                    personImageId: person.id,
+                    topItemId: topItem.id,
+                    bottomItemId: bottomItem.id,
+                  });
 
-            if (i > 0) await sleep(2000);
+                try {
+                  let result;
+                  try {
+                    result = await tryGenerate();
+                  } catch (firstErr) {
+                    console.warn(`Tryon combo ${i + 1} failed, retrying in 3s...`, firstErr);
+                    await new Promise((r) => setTimeout(r, retryDelay));
+                    result = await tryGenerate();
+                  }
 
-            try {
-              const result = await generateTryon({
-                personImagePath: person.imagePath,
-                topImagePath: topItem.imagePath,
-                bottomImagePath: bottomItem.imagePath,
-                personImageId: person.id,
-                topItemId: topItem.id,
-                bottomItemId: bottomItem.id,
-              });
+                  completedCount++;
+                  send("progress", {
+                    step: "generated",
+                    message: `已完成 ${completedCount}/${combinations.length} 组穿搭生成${result.cached ? "（缓存）" : ""}`,
+                    current: completedCount,
+                    total: combinations.length,
+                    outfitId: result.outfitId,
+                    imagePath: result.imagePath,
+                  });
 
-              outfitResults.push({
-                outfitId: result.outfitId,
-                imagePath: result.imagePath,
-                reason: combo.reason,
-                topItemId: combo.topItemId,
-                bottomItemId: combo.bottomItemId,
-                cached: result.cached,
-              });
-
-              send("progress", {
-                step: "generated",
-                message: `穿搭 ${i + 1} 已生成${result.cached ? "（缓存）" : ""}`,
-                current: i + 1,
-                total: combinations.length,
-                outfitId: result.outfitId,
-                imagePath: result.imagePath,
-              });
-            } catch (err) {
-              console.error(`Tryon generation failed for combo ${i + 1}:`, err);
-              send("progress", {
-                step: "generate_failed",
-                message: `穿搭 ${i + 1} 生成失败，跳过`,
-                current: i + 1,
-              });
-            }
-          }
+                  return {
+                    outfitId: result.outfitId,
+                    imagePath: result.imagePath,
+                    reason: combo.reason,
+                    topItemId: combo.topItemId,
+                    bottomItemId: combo.bottomItemId,
+                    cached: result.cached,
+                  };
+                } catch (err) {
+                  completedCount++;
+                  console.error(`Tryon generation failed for combo ${i + 1} after retry:`, err);
+                  send("progress", {
+                    step: "generate_failed",
+                    message: `已完成 ${completedCount}/${combinations.length} 组（1 组失败）`,
+                    current: completedCount,
+                    total: combinations.length,
+                  });
+                  return null;
+                }
+              },
+              concurrency
+            )
+          ).filter((r): r is NonNullable<typeof r> => r !== null);
 
           if (outfitResults.length === 0) {
             send("error", { message: "所有穿搭生成均失败" });
