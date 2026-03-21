@@ -16,6 +16,7 @@ interface PersonData {
   id: string;
   name: string;
   imagePath: string;
+  enhancedImagePath?: string | null;
   isDefault: boolean;
 }
 
@@ -251,7 +252,7 @@ export default function TryonPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          person_image: person.imagePath,
+          person_image: person.enhancedImagePath || person.imagePath,
           top_garment_image: top?.imagePath || null,
           bottom_garment_image: bottom?.imagePath || null,
           personImageId: person.id,

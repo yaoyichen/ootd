@@ -3,12 +3,32 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 
+interface PersonDescription {
+  gender?: string;
+  bodyType?: string;
+  skinTone?: string;
+  hairStyle?: string;
+  vibe?: string;
+  summary?: string;
+}
+
 interface Person {
   id: string;
   name: string;
   imagePath: string;
+  enhancedImagePath?: string | null;
+  description?: string | null;
   isDefault: boolean;
   createdAt: string;
+}
+
+function parseDescription(raw?: string | null): PersonDescription | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
 }
 
 export default function PersonsPage() {
@@ -18,12 +38,17 @@ export default function PersonsPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
+  const [viewPerson, setViewPerson] = useState<Person | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const fetchPersons = useCallback(async () => {
     const res = await fetch("/api/persons");
     const data = await res.json();
     setPersons(data);
+    // Sync lightbox if open
+    setViewPerson((prev) =>
+      prev ? data.find((p: Person) => p.id === prev.id) || null : null
+    );
     setLoading(false);
   }, []);
 
@@ -54,16 +79,24 @@ export default function PersonsPage() {
       });
       const { path: imagePath } = await uploadRes.json();
 
-      await fetch("/api/persons", {
+      const personRes = await fetch("/api/persons", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newName, imagePath }),
       });
+      const person = await personRes.json();
 
       setShowAdd(false);
       setNewName("");
       setPreview(null);
       fetchPersons();
+
+      // Fire AI enhance in background, poll for updates
+      if (person.id) {
+        fetch(`/api/persons/${person.id}/enhance`, { method: "POST" })
+          .then(() => fetchPersons())
+          .catch(() => {});
+      }
     } catch {
       alert("保存失败");
     }
@@ -84,6 +117,8 @@ export default function PersonsPage() {
     await fetch(`/api/persons/${id}`, { method: "DELETE" });
     fetchPersons();
   };
+
+  const displayImage = (p: Person) => p.enhancedImagePath || p.imagePath;
 
   return (
     <div className="relative min-h-screen" style={{ background: "#FFF8F6" }}>
@@ -166,6 +201,81 @@ export default function PersonsPage() {
           </div>
         )}
 
+        {/* Full-screen image viewer */}
+        {viewPerson && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md"
+            onClick={() => setViewPerson(null)}
+          >
+            <div
+              className="relative max-w-lg w-full mx-4 flex flex-col items-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close button */}
+              <button
+                onClick={() => setViewPerson(null)}
+                className="absolute -top-10 right-0 w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ background: "rgba(255,255,255,0.2)" }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              </button>
+
+              {/* Image */}
+              <div className="w-full rounded-2xl overflow-hidden" style={{ maxHeight: "70vh" }}>
+                <Image
+                  src={displayImage(viewPerson)}
+                  alt={viewPerson.name}
+                  width={600}
+                  height={800}
+                  className="w-full h-full object-contain"
+                  style={{ maxHeight: "70vh" }}
+                />
+              </div>
+
+              {/* Info card */}
+              <div className="w-full mt-3 p-4 rounded-2xl" style={{ background: "rgba(255,255,255,0.12)" }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <p className="text-base font-semibold text-white">{viewPerson.name}</p>
+                  {viewPerson.isDefault && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                      style={{ background: "linear-gradient(135deg, #F27C88, #FACDD0)", color: "#fff" }}>
+                      默认
+                    </span>
+                  )}
+                  {viewPerson.enhancedImagePath && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                      style={{ background: "rgba(52,199,89,0.8)", color: "#fff" }}>
+                      已美化
+                    </span>
+                  )}
+                </div>
+                {(() => {
+                  const desc = parseDescription(viewPerson.description);
+                  if (!desc) return (
+                    <p className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
+                      AI 分析中...上传后需等待几秒
+                    </p>
+                  );
+                  return (
+                    <div className="flex flex-col gap-1.5">
+                      <p className="text-sm" style={{ color: "rgba(255,255,255,0.9)" }}>{desc.summary}</p>
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {desc.gender && <Tag label={desc.gender} />}
+                        {desc.bodyType && <Tag label={desc.bodyType} />}
+                        {desc.skinTone && <Tag label={desc.skinTone} />}
+                        {desc.hairStyle && <Tag label={desc.hairStyle} />}
+                        {desc.vibe && <Tag label={desc.vibe} />}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Persons grid */}
         {loading ? (
           <div className="flex justify-center py-20">
@@ -198,16 +308,17 @@ export default function PersonsPage() {
             {persons.map((p) => (
               <div
                 key={p.id}
-                className="group glass rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02]"
+                className="group glass rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-pointer"
                 onMouseEnter={(e) => {
                   e.currentTarget.style.boxShadow = "0 8px 32px rgba(242,124,136,0.1)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.boxShadow = "0 2px 20px rgba(0,0,0,0.04)";
                 }}
+                onClick={() => setViewPerson(p)}
               >
                 <div className="relative" style={{ aspectRatio: "3/4" }}>
-                  <Image src={p.imagePath} alt={p.name} fill className="object-cover" />
+                  <Image src={displayImage(p)} alt={p.name} fill className="object-cover" />
                   {p.isDefault && (
                     <div
                       className="absolute top-2 left-2 px-2 py-1 rounded-full text-[10px] font-semibold"
@@ -216,7 +327,18 @@ export default function PersonsPage() {
                       默认
                     </div>
                   )}
-                  <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {p.enhancedImagePath && (
+                    <div
+                      className="absolute bottom-2 left-2 px-2 py-1 rounded-full text-[10px] font-semibold"
+                      style={{ background: "rgba(52,199,89,0.85)", color: "#fff" }}
+                    >
+                      已美化
+                    </div>
+                  )}
+                  <div
+                    className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     {!p.isDefault && (
                       <button
                         onClick={() => handleSetDefault(p.id)}
@@ -244,6 +366,14 @@ export default function PersonsPage() {
                   <p className="text-sm font-medium truncate" style={{ color: "#1D1D1F" }}>
                     {p.name}
                   </p>
+                  {(() => {
+                    const desc = parseDescription(p.description);
+                    return desc?.vibe ? (
+                      <p className="text-[11px] mt-0.5 truncate" style={{ color: "#6E6E73" }}>
+                        {desc.vibe}
+                      </p>
+                    ) : null;
+                  })()}
                 </div>
               </div>
             ))}
@@ -251,5 +381,16 @@ export default function PersonsPage() {
         )}
       </main>
     </div>
+  );
+}
+
+function Tag({ label }: { label: string }) {
+  return (
+    <span
+      className="px-2 py-0.5 rounded-full text-[11px]"
+      style={{ background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.8)" }}
+    >
+      {label}
+    </span>
   );
 }

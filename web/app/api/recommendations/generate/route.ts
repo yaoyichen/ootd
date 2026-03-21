@@ -99,6 +99,17 @@ export async function POST(req: NextRequest) {
           // Step 1: LLM suggests combinations
           send("progress", { step: "matching", message: "正在智能匹配单品组合..." });
 
+          // Extract person description summary for matching context
+          let personDescription: string | undefined;
+          if (person.description) {
+            try {
+              const desc = JSON.parse(person.description);
+              if (desc.summary) personDescription = desc.summary;
+            } catch {
+              // ignore parse error
+            }
+          }
+
           const combinations = await suggestCombinations(
             items.map((i) => ({
               id: i.id,
@@ -109,7 +120,8 @@ export async function POST(req: NextRequest) {
               season: i.season,
               occasion: i.occasion,
             })),
-            weatherContext
+            weatherContext,
+            personDescription
           );
 
           if (combinations.length === 0) {
@@ -128,6 +140,7 @@ export async function POST(req: NextRequest) {
           const concurrency = Number(process.env.DASHSCOPE_CONCURRENCY) || 2;
           const retryDelay = Number(process.env.DASHSCOPE_RETRY_DELAY) || 3000;
           let completedCount = 0;
+          const personImageForTryon = person.enhancedImagePath || person.imagePath;
           send("progress", {
             step: "generating",
             message: `开始生成穿搭效果（共 ${combinations.length} 组）...`,
@@ -146,7 +159,7 @@ export async function POST(req: NextRequest) {
 
                 const tryGenerate = () =>
                   generateTryon({
-                    personImagePath: person.imagePath,
+                    personImagePath: personImageForTryon,
                     topImagePath: topItem.imagePath,
                     bottomImagePath: bottomItem.imagePath,
                     personImageId: person.id,

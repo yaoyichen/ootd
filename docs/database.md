@@ -135,8 +135,36 @@ if (process.env.NODE_ENV !== "production") {
 | id | String | 是 | cuid() 自动生成 | 主键 |
 | name | String | 是 | — | 人像名称 |
 | imagePath | String | 是 | — | 图片路径（如 `/uploads/persons/xxx.jpg`） |
+| enhancedImagePath | String? | 否 | — | AI 美化后的图片路径（如 `/uploads/persons-enhanced/xxx.png`） |
+| description | String? | 否 | — | AI 分析的结构化描述 JSON（见下方说明） |
 | isDefault | Boolean | 是 | false | 是否为默认人像（试穿时自动选中） |
 | createdAt | DateTime | 是 | now() | 创建时间 |
+
+**description 字段格式**：
+
+JSON 字符串，包含 AI 分析的人像特征：
+
+```json
+{
+  "gender": "女",
+  "bodyType": "偏瘦",
+  "skinTone": "暖白皮",
+  "hairStyle": "长发微卷",
+  "vibe": "温柔知性",
+  "background": "室内白墙",
+  "summary": "暖白皮偏瘦女生，长发微卷，气质温柔知性，适合柔和色系和修身剪裁"
+}
+```
+
+| 键 | 含义 |
+|----|------|
+| gender | 性别 |
+| bodyType | 体型（偏瘦/匀称/微胖/健壮） |
+| skinTone | 肤色（冷白皮/暖白皮/自然肤色/小麦色/深肤色） |
+| hairStyle | 发型简述 |
+| vibe | 气质风格（甜美/温柔知性/酷帅/优雅大气/阳光运动/文艺清新） |
+| background | 拍摄场景简述 |
+| summary | 一句话穿搭建议导向总结 |
 
 ### Outfit（穿搭记录）
 

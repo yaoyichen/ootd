@@ -29,11 +29,13 @@ model Item {
 }
 
 model PersonImage {
-  id        String   @id @default(cuid())
-  name      String
-  imagePath String
-  isDefault Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id                String   @id @default(cuid())
+  name              String
+  imagePath         String
+  enhancedImagePath String?  /// 美化后的图片路径
+  description       String?  /// AI 分析的结构化描述 JSON
+  isDefault         Boolean  @default(false)
+  createdAt         DateTime @default(now())
 }
 
 model Outfit {
