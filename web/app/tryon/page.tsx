@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
+import { useToast } from "../components/ToastProvider";
+import { useModalKeyboard } from "../hooks/useModalKeyboard";
 
 type Status = "idle" | "processing" | "completed" | "failed";
 
@@ -48,8 +50,10 @@ function Picker({
   onSelect: (id: string) => void;
   onClose: () => void;
 }) {
+  useModalKeyboard({ isOpen: true, onClose });
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm" role="dialog" aria-modal="true">
       <div
         className="w-full max-w-lg mx-4 mb-4 sm:mb-0 rounded-3xl p-6 flex flex-col gap-4 max-h-[80vh]"
         style={{ background: "rgba(255,255,255,0.96)", backdropFilter: "blur(20px)" }}
@@ -174,6 +178,7 @@ export default function TryonPage() {
   const [score, setScore] = useState<number | null>(null);
   const [evaluation, setEvaluation] = useState<string | null>(null);
   const [scoring, setScoring] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     fetch("/api/persons").then((r) => r.json()).then((data) => {
@@ -296,6 +301,7 @@ export default function TryonPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isFavorite: newVal }),
       });
+      toast.success(newVal ? "已收藏" : "已取消收藏");
     } catch {
       setIsFavorite(!newVal);
     }

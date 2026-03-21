@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Image from "next/image";
 import ALL_CITIES from "@/lib/china-cities.json";
+import { SkeletonWeatherBar, SkeletonOutfitCard } from "../components/Skeleton";
+import { useModalKeyboard } from "../hooks/useModalKeyboard";
 
 interface CityOption {
   id: string;
@@ -133,8 +135,10 @@ function PersonPicker({
   onSelect: (id: string) => void;
   onClose: () => void;
 }) {
+  useModalKeyboard({ isOpen: true, onClose });
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm" role="dialog" aria-modal="true">
       <div
         className="w-full max-w-lg mx-4 mb-4 sm:mb-0 rounded-3xl p-6 flex flex-col gap-4 max-h-[80vh]"
         style={{ background: "rgba(255,255,255,0.96)", backdropFilter: "blur(20px)" }}
@@ -782,6 +786,12 @@ export default function RecommendationsPage() {
   const [rescoring, setRescoring] = useState(false);
   const [quickLoading, setQuickLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
+  const closePreview = useCallback(() => setPreviewImage(null), []);
+
+  useModalKeyboard({
+    isOpen: !!previewImage,
+    onClose: closePreview,
+  });
   const [cityId, setCityId] = useState(DEFAULT_CITY_ID);
   const [cityName, setCityName] = useState(
     PRESET_CITIES.find((c) => c.id === DEFAULT_CITY_ID)?.name || "杭州"
@@ -1426,15 +1436,13 @@ export default function RecommendationsPage() {
 
         {/* Loading state */}
         {phase === "loading" && (
-          <div className="flex justify-center py-20">
-            <div
-              className="w-8 h-8 rounded-full"
-              style={{
-                border: "3px solid rgba(242,124,136,0.15)",
-                borderTopColor: "#F27C88",
-                animation: "spin 0.8s linear infinite",
-              }}
-            />
+          <div className="flex flex-col gap-5">
+            <SkeletonWeatherBar />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <SkeletonOutfitCard key={i} />
+              ))}
+            </div>
           </div>
         )}
       </main>
@@ -1445,6 +1453,8 @@ export default function RecommendationsPage() {
           className="fixed inset-0 z-50 flex items-center justify-center"
           style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}
           onClick={() => setPreviewImage(null)}
+          role="dialog"
+          aria-modal="true"
         >
           <div className="relative max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <Image

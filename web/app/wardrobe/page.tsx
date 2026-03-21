@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useToast } from "../components/ToastProvider";
+import { SkeletonCard } from "../components/Skeleton";
 
 interface Item {
   id: string;
@@ -42,6 +44,8 @@ export default function WardrobePage() {
   const [items, setItems] = useState<Item[]>([]);
   const [activeCategory, setActiveCategory] = useState("");
   const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const toast = useToast();
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -60,10 +64,23 @@ export default function WardrobePage() {
     fetchItems();
   }, [fetchItems]);
 
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = () => setMenuOpen(null);
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [menuOpen]);
+
   const handleDelete = async (id: string) => {
-    if (!confirm("确定删除这件单品？")) return;
-    await fetch(`/api/items/${id}`, { method: "DELETE" });
-    fetchItems();
+    toast.confirm({
+      message: "确定删除这件单品？",
+      onConfirm: async () => {
+        await fetch(`/api/items/${id}`, { method: "DELETE" });
+        fetchItems();
+        toast.success("已删除");
+      },
+    });
   };
 
   return (
@@ -123,15 +140,10 @@ export default function WardrobePage() {
 
         {/* Items grid */}
         {loading ? (
-          <div className="flex justify-center py-20">
-            <div
-              className="w-8 h-8 rounded-full"
-              style={{
-                border: "3px solid rgba(242,124,136,0.15)",
-                borderTopColor: "#F27C88",
-                animation: "spin 0.8s linear infinite",
-              }}
-            />
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
           </div>
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center gap-4 py-20">
@@ -176,15 +188,47 @@ export default function WardrobePage() {
                     fill
                     className="object-cover"
                   />
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
-                    className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ background: "rgba(255,59,48,0.85)", color: "#fff" }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                      <path d="M18 6 6 18M6 6l12 12" />
-                    </svg>
-                  </button>
+                  {/* Mobile menu button */}
+                  <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpen(menuOpen === item.id ? null : item.id);
+                      }}
+                      className="w-7 h-7 rounded-full flex items-center justify-center"
+                      style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+                        <circle cx="12" cy="5" r="2" />
+                        <circle cx="12" cy="12" r="2" />
+                        <circle cx="12" cy="19" r="2" />
+                      </svg>
+                    </button>
+                    {menuOpen === item.id && (
+                      <div
+                        className="absolute top-9 right-0 rounded-xl overflow-hidden"
+                        style={{
+                          background: "rgba(255,255,255,0.95)",
+                          backdropFilter: "blur(20px)",
+                          boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
+                          border: "1px solid rgba(0,0,0,0.06)",
+                          minWidth: 100,
+                        }}
+                      >
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuOpen(null);
+                            handleDelete(item.id);
+                          }}
+                          className="w-full text-left px-4 py-2.5 text-xs font-medium transition-colors hover:bg-black/[0.03]"
+                          style={{ color: "#FF3B30" }}
+                        >
+                          删除
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="p-3">
                   <p className="text-sm font-medium truncate" style={{ color: "#1D1D1F" }}>

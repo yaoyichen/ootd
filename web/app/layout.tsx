@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { NavBar } from "./components/NavBar";
+import { ToastProvider } from "./components/ToastProvider";
 
 const plusJakarta = localFont({
   src: "../public/fonts/PlusJakartaSans-Variable.woff2",
@@ -24,7 +25,9 @@ export default function RootLayout({
     <html lang="zh" className={plusJakarta.variable}>
       <body className="antialiased" style={{ fontFamily: "var(--font-plus-jakarta), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
         <NavBar />
-        <div className="pb-20">{children}</div>
+        <ToastProvider>
+          <div className="pb-20">{children}</div>
+        </ToastProvider>
       </body>
     </html>
   );

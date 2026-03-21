@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
+import { useToast } from "../components/ToastProvider";
+import { SkeletonCard } from "../components/Skeleton";
+import { useModalKeyboard } from "../hooks/useModalKeyboard";
 
 interface PersonDescription {
   gender?: string;
@@ -39,7 +42,19 @@ export default function PersonsPage() {
   const [newName, setNewName] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
   const [viewPerson, setViewPerson] = useState<Person | null>(null);
+  const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const toast = useToast();
+
+  useModalKeyboard({
+    isOpen: showAdd,
+    onClose: () => { setShowAdd(false); setPreview(null); setNewName(""); },
+  });
+
+  useModalKeyboard({
+    isOpen: !!viewPerson,
+    onClose: () => setViewPerson(null),
+  });
 
   const fetchPersons = useCallback(async () => {
     const res = await fetch("/api/persons");
@@ -55,6 +70,14 @@ export default function PersonsPage() {
   useEffect(() => {
     fetchPersons();
   }, [fetchPersons]);
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = () => setMenuOpen(null);
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [menuOpen]);
 
   const handleFile = useCallback((file: File) => {
     const reader = new FileReader();
@@ -98,7 +121,7 @@ export default function PersonsPage() {
           .catch(() => {});
       }
     } catch {
-      alert("保存失败");
+      toast.error("保存失败");
     }
     setUploading(false);
   };
@@ -110,12 +133,18 @@ export default function PersonsPage() {
       body: JSON.stringify({ isDefault: true }),
     });
     fetchPersons();
+    toast.success("已设为默认人像");
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("确定删除这张人像？")) return;
-    await fetch(`/api/persons/${id}`, { method: "DELETE" });
-    fetchPersons();
+    toast.confirm({
+      message: "确定删除这张人像？",
+      onConfirm: async () => {
+        await fetch(`/api/persons/${id}`, { method: "DELETE" });
+        fetchPersons();
+        toast.success("已删除");
+      },
+    });
   };
 
   const displayImage = (p: Person) => p.enhancedImagePath || p.imagePath;
@@ -166,7 +195,11 @@ export default function PersonsPage() {
 
         {/* Add person modal */}
         {showAdd && preview && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+          >
             <div className="glass rounded-3xl p-6 w-full max-w-md mx-4 flex flex-col gap-5" style={{ background: "rgba(255,255,255,0.95)" }}>
               <h2 className="text-lg font-bold" style={{ color: "#1D1D1F" }}>添加人像</h2>
               <div className="rounded-2xl overflow-hidden" style={{ aspectRatio: "3/4" }}>
@@ -206,6 +239,8 @@ export default function PersonsPage() {
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md"
             onClick={() => setViewPerson(null)}
+            role="dialog"
+            aria-modal="true"
           >
             <div
               className="relative max-w-lg w-full mx-4 flex flex-col items-center"
@@ -278,15 +313,10 @@ export default function PersonsPage() {
 
         {/* Persons grid */}
         {loading ? (
-          <div className="flex justify-center py-20">
-            <div
-              className="w-8 h-8 rounded-full"
-              style={{
-                border: "3px solid rgba(242,124,136,0.15)",
-                borderTopColor: "#F27C88",
-                animation: "spin 0.8s linear infinite",
-              }}
-            />
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
           </div>
         ) : persons.length === 0 ? (
           <div className="flex flex-col items-center gap-4 py-20">
@@ -335,31 +365,59 @@ export default function PersonsPage() {
                       已美化
                     </div>
                   )}
-                  <div
-                    className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {!p.isDefault && (
-                      <button
-                        onClick={() => handleSetDefault(p.id)}
-                        className="w-7 h-7 rounded-full flex items-center justify-center"
-                        style={{ background: "rgba(242,124,136,0.85)", color: "#fff" }}
-                        title="设为默认"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                        </svg>
-                      </button>
-                    )}
+                  {/* Mobile menu button */}
+                  <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
                     <button
-                      onClick={() => handleDelete(p.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpen(menuOpen === p.id ? null : p.id);
+                      }}
                       className="w-7 h-7 rounded-full flex items-center justify-center"
-                      style={{ background: "rgba(255,59,48,0.85)", color: "#fff" }}
+                      style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                        <path d="M18 6 6 18M6 6l12 12" />
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+                        <circle cx="12" cy="5" r="2" />
+                        <circle cx="12" cy="12" r="2" />
+                        <circle cx="12" cy="19" r="2" />
                       </svg>
                     </button>
+                    {menuOpen === p.id && (
+                      <div
+                        className="absolute top-9 right-0 rounded-xl overflow-hidden"
+                        style={{
+                          background: "rgba(255,255,255,0.95)",
+                          backdropFilter: "blur(20px)",
+                          boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
+                          border: "1px solid rgba(0,0,0,0.06)",
+                          minWidth: 100,
+                        }}
+                      >
+                        {!p.isDefault && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMenuOpen(null);
+                              handleSetDefault(p.id);
+                            }}
+                            className="w-full text-left px-4 py-2.5 text-xs font-medium transition-colors hover:bg-black/[0.03]"
+                            style={{ color: "#F27C88" }}
+                          >
+                            设为默认
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuOpen(null);
+                            handleDelete(p.id);
+                          }}
+                          className="w-full text-left px-4 py-2.5 text-xs font-medium transition-colors hover:bg-black/[0.03]"
+                          style={{ color: "#FF3B30" }}
+                        >
+                          删除
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="p-3">

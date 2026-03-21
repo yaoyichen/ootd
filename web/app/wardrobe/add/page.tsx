@@ -3,6 +3,8 @@
 import { useState, useRef, useCallback, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
+import { useToast } from "../../components/ToastProvider";
+import { useModalKeyboard } from "../../hooks/useModalKeyboard";
 
 const CATEGORIES = [
   { value: "TOP", label: "上衣" },
@@ -39,6 +41,12 @@ function AddItemForm() {
   const [duplicateItem, setDuplicateItem] = useState<{
     id: string; name: string; category: string; color?: string; imagePath: string;
   } | null>(null);
+  const toast = useToast();
+
+  useModalKeyboard({
+    isOpen: !!duplicateItem,
+    onClose: () => setDuplicateItem(null),
+  });
 
   // Taobao import states
   const [inputMode, setInputMode] = useState<"upload" | "taobao">("upload");
@@ -243,7 +251,7 @@ function AddItemForm() {
 
       router.push("/wardrobe");
     } catch {
-      alert("保存失败，请重试");
+      toast.error("保存失败，请重试");
       setSaving(false);
     }
   };
@@ -679,7 +687,7 @@ function AddItemForm() {
 
       {/* Duplicate detection dialog */}
       {duplicateItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(6px)" }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(6px)" }} role="dialog" aria-modal="true">
           <div className="glass rounded-3xl p-6 mx-6 max-w-sm w-full flex flex-col items-center gap-4" style={{ background: "rgba(255,255,255,0.95)" }}>
             <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(242,124,136,0.1)" }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F27C88" strokeWidth="2" strokeLinecap="round">

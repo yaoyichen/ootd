@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
+import { useToast } from "../components/ToastProvider";
+import { SkeletonOutfitCard } from "../components/Skeleton";
+import { useModalKeyboard } from "../hooks/useModalKeyboard";
 
 interface ScoreDims {
   colorHarmony: number;
@@ -45,6 +48,12 @@ export default function FavoritesPage() {
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [scoring, setScoring] = useState<Set<string>>(new Set());
+  const toast = useToast();
+
+  useModalKeyboard({
+    isOpen: !!lightbox,
+    onClose: () => setLightbox(null),
+  });
 
   const fetchAll = useCallback(async () => {
     try {
@@ -87,13 +96,18 @@ export default function FavoritesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("确认删除这条穿搭记录？删除后图片也将被清除。")) return;
-    setOutfits((prev) => prev.filter((o) => o.id !== id));
-    try {
-      await fetch(`/api/outfits/${id}`, { method: "DELETE" });
-    } catch {
-      fetchAll();
-    }
+    toast.confirm({
+      message: "确认删除这条穿搭记录？删除后图片也将被清除。",
+      onConfirm: async () => {
+        setOutfits((prev) => prev.filter((o) => o.id !== id));
+        try {
+          await fetch(`/api/outfits/${id}`, { method: "DELETE" });
+          toast.success("已删除");
+        } catch {
+          fetchAll();
+        }
+      },
+    });
   };
 
   const handleScore = async (id: string) => {
@@ -149,6 +163,8 @@ export default function FavoritesPage() {
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
           onClick={() => setLightbox(null)}
+          role="dialog"
+          aria-modal="true"
         >
           <div className="relative max-w-2xl max-h-[90vh] w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <Image
@@ -191,17 +207,10 @@ export default function FavoritesPage() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-20">
-            <svg className="w-8 h-8" viewBox="0 0 48 48" style={{ animation: "spin 1s linear infinite" }}>
-              <defs>
-                <linearGradient id="fsg" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#F27C88" />
-                  <stop offset="100%" stopColor="#FACDD0" />
-                </linearGradient>
-              </defs>
-              <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(242,124,136,0.12)" strokeWidth="3" />
-              <circle cx="24" cy="24" r="20" fill="none" stroke="url(#fsg)" strokeWidth="3" strokeLinecap="round" strokeDasharray="90 126" />
-            </svg>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <SkeletonOutfitCard key={i} />
+            ))}
           </div>
         ) : outfits.length === 0 ? (
           <div className="glass rounded-3xl p-16 text-center">
@@ -406,7 +415,7 @@ export default function FavoritesPage() {
                       <button
                         onClick={() => handleScore(outfit.id)}
                         disabled={scoring.has(outfit.id)}
-                        className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-colors"
+                        className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-colors"
                         style={{
                           background: scoring.has(outfit.id)
                             ? "rgba(242,124,136,0.12)"
@@ -428,7 +437,7 @@ export default function FavoritesPage() {
                       </button>
                       <button
                         onClick={() => handleDelete(outfit.id)}
-                        className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                        className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
                         style={{ background: "rgba(0,0,0,0.04)" }}
                         title="删除"
                       >
