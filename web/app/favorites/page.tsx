@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useToast } from "../components/ToastProvider";
 import { SkeletonOutfitCard } from "../components/Skeleton";
 import { useModalKeyboard } from "../hooks/useModalKeyboard";
+import ShareCardModal from "../components/ShareCardModal";
 
 interface ScoreDims {
   colorHarmony: number;
@@ -48,6 +49,8 @@ export default function FavoritesPage() {
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [scoring, setScoring] = useState<Set<string>>(new Set());
+  const [shareOutfit, setShareOutfit] = useState<OutfitRecord | null>(null);
+  const [publishedOutfitIds, setPublishedOutfitIds] = useState<Set<string>>(new Set());
   const toast = useToast();
 
   useModalKeyboard({
@@ -57,19 +60,24 @@ export default function FavoritesPage() {
 
   const fetchAll = useCallback(async () => {
     try {
-      const [outfitRes, itemRes, personRes] = await Promise.all([
+      const [outfitRes, itemRes, personRes, showcaseRes] = await Promise.all([
         fetch("/api/outfits?favorites=true"),
         fetch("/api/items"),
         fetch("/api/persons"),
+        fetch("/api/showcase?limit=50"),
       ]);
-      const [outfitData, itemData, personData] = await Promise.all([
+      const [outfitData, itemData, personData, showcaseData] = await Promise.all([
         outfitRes.json(),
         itemRes.json(),
         personRes.json(),
+        showcaseRes.json(),
       ]);
       if (Array.isArray(outfitData)) setOutfits(outfitData);
       if (Array.isArray(itemData)) setItems(itemData);
       if (Array.isArray(personData)) setPersons(personData);
+      if (Array.isArray(showcaseData)) {
+        setPublishedOutfitIds(new Set(showcaseData.map((p: { outfitId: string }) => p.outfitId)));
+      }
     } catch {
       /* ignore */
     } finally {
@@ -146,6 +154,41 @@ export default function FavoritesPage() {
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
     return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+  };
+
+  const handlePublish = async (outfitId: string) => {
+    if (publishedOutfitIds.has(outfitId)) {
+      // Find the showcase post and unpublish
+      try {
+        const res = await fetch(`/api/showcase?limit=50`);
+        const posts = await res.json();
+        const post = posts.find((p: { outfitId: string }) => p.outfitId === outfitId);
+        if (post) {
+          await fetch(`/api/showcase/${post.id}`, { method: "DELETE" });
+          setPublishedOutfitIds((prev) => { const s = new Set(prev); s.delete(outfitId); return s; });
+          toast.success("已从广场撤回");
+        }
+      } catch {
+        toast.error("撤回失败");
+      }
+    } else {
+      try {
+        const res = await fetch("/api/showcase", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ outfitId }),
+        });
+        if (res.ok) {
+          setPublishedOutfitIds((prev) => new Set(prev).add(outfitId));
+          toast.success("已发布到广场");
+        } else {
+          const data = await res.json();
+          toast.error(data.error || "发布失败");
+        }
+      } catch {
+        toast.error("发布失败");
+      }
+    }
   };
 
   return (
@@ -445,6 +488,41 @@ export default function FavoritesPage() {
                           <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14" />
                         </svg>
                       </button>
+                      <button
+                        onClick={() => setShareOutfit(outfit)}
+                        className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ background: "rgba(242,124,136,0.06)" }}
+                        title="分享卡片"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F27C88" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                          <polyline points="16 6 12 2 8 6" />
+                          <line x1="12" y1="2" x2="12" y2="15" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handlePublish(outfit.id)}
+                        className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{
+                          background: publishedOutfitIds.has(outfit.id)
+                            ? "rgba(52,199,89,0.1)"
+                            : "rgba(242,124,136,0.06)",
+                        }}
+                        title={publishedOutfitIds.has(outfit.id) ? "已发布（点击撤回）" : "发布到广场"}
+                      >
+                        {publishedOutfitIds.has(outfit.id) ? (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34C759" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M20 6 9 17l-5-5" />
+                          </svg>
+                        ) : (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F27C88" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                            <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                            <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                            <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                          </svg>
+                        )}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -453,6 +531,19 @@ export default function FavoritesPage() {
           </div>
         )}
       </main>
+
+      {shareOutfit && (
+        <ShareCardModal
+          isOpen={!!shareOutfit}
+          onClose={() => setShareOutfit(null)}
+          outfitImage={shareOutfit.resultImagePath}
+          score={shareOutfit.score}
+          scoreDims={shareOutfit.scoreDims}
+          evaluation={shareOutfit.evaluation}
+          topItem={getItem(shareOutfit.topItemId) ? { name: getItem(shareOutfit.topItemId)!.name, imagePath: getItem(shareOutfit.topItemId)!.imagePath } : null}
+          bottomItem={getItem(shareOutfit.bottomItemId) ? { name: getItem(shareOutfit.bottomItemId)!.name, imagePath: getItem(shareOutfit.bottomItemId)!.imagePath } : null}
+        />
+      )}
     </div>
   );
 }

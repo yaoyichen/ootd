@@ -1,7 +1,7 @@
 # 数据库参考文档
 
 **技术栈**：Prisma 7 + SQLite + better-sqlite3 adapter
-**更新日期**：2026-03-19（v6：Item 去掉 brand/price/purchaseDate/notes，新增 material/fit/pattern/thickness/description）
+**更新日期**：2026-03-22（v7：新增 ShowcasePost model + Outfit 关系字段，穿搭广场功能）
 
 ---
 
@@ -243,6 +243,28 @@ JSON 字符串，包含五个评分维度（每项 1–100 分）：
 - 写入新缓存时自动清理所有 `expiresAt < now()` 的过期记录
 - 30 天 TTL，表不会无限膨胀
 
+### ShowcasePost（穿搭广场帖子）
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| id | String | 是 | cuid() 自动生成 | 主键 |
+| outfitId | String | 是 | — | 关联的 Outfit ID（外键，级联删除） |
+| caption | String? | 否 | — | 用户配文 |
+| likes | Int | 是 | 0 | 点赞数 |
+| tryonCount | Int | 是 | 0 | 被试穿次数 |
+| isPublic | Boolean | 是 | true | 是否公开（撤回时设为 false） |
+| createdAt | DateTime | 是 | now() | 创建时间 |
+| updatedAt | DateTime | 是 | 自动更新 | 更新时间 |
+
+**关系**：`outfit Outfit @relation(fields: [outfitId], references: [id], onDelete: Cascade)`
+**Outfit 反向关系**：`showcasePosts ShowcasePost[]`
+
+**索引**：
+- `@@index([isPublic, createdAt])` — 最新排序查询
+- `@@index([isPublic, likes])` — 最热排序查询
+
+**隐私保护**：只分享试穿效果图（AI 生成图），不暴露用户原始人像照片。分享后可随时撤回（设 `isPublic = false`），不影响自己的收藏。
+
 ---
 
 ## 四、API 路由参考
@@ -439,6 +461,44 @@ JSON 字符串，包含五个评分维度（每项 1–100 分）：
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/api/tryon-status` | 查询试穿任务状态 |
+
+### 穿搭广场
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/showcase` | 获取广场帖子列表 |
+| POST | `/api/showcase` | 发布穿搭到广场 |
+| DELETE | `/api/showcase/[id]` | 撤回帖子（软删除，设 isPublic=false） |
+| POST | `/api/showcase/[id]/like` | 点赞（likes +1） |
+| POST | `/api/showcase/[id]/tryon` | 递增试穿计数（tryonCount +1） |
+| POST | `/api/showcase/[id]/copy-item` | 一键加衣橱（复制单品到用户衣橱） |
+
+**GET /api/showcase** 查询参数：
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| sort | string | 排序方式：`newest`（默认）/ `hottest` / `random` |
+| limit | number | 返回数量，默认 20，最大 50 |
+
+返回数组，每项包含：`id`, `outfitId`, `caption`, `likes`, `tryonCount`, `createdAt`, `outfit`（resultImagePath/score/scoreDims/evaluation）, `topItem`, `bottomItem`。
+
+**POST /api/showcase** 请求体：
+
+```json
+{ "outfitId": "clxxx", "caption": "今日穿搭" }
+```
+
+同一 outfitId 不允许重复发布（返回 409）。
+
+**POST /api/showcase/[id]/copy-item** 请求体：
+
+```json
+{ "itemId": "clxxx" }
+```
+
+复制源 Item 的所有属性字段（name/category/color/style/season 等），创建为新 Item。不复制 imageHash/originalImagePath。
+
+> **试穿同款**：广场页的「试穿同款」直接调用 `/api/tryon`（与试穿页完全相同的链路），传入广场帖子关联的单品图片 + 用户人像，复用缓存机制。试穿完成后自动触发 AI 评分，结果弹窗支持收藏、下载、加衣橱。
 
 ---
 

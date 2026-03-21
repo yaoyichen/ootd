@@ -5,6 +5,8 @@ import Image from "next/image";
 import ALL_CITIES from "@/lib/china-cities.json";
 import { SkeletonWeatherBar, SkeletonOutfitCard } from "../components/Skeleton";
 import { useModalKeyboard } from "../hooks/useModalKeyboard";
+import ShareCardModal from "../components/ShareCardModal";
+import { useToast } from "../components/ToastProvider";
 
 interface CityOption {
   id: string;
@@ -67,6 +69,15 @@ const WEATHER_ICONS: Record<string, string> = {
 function getWeatherIcon(text: string): string {
   return WEATHER_ICONS[text] || "🌤️";
 }
+
+const OCCASIONS = [
+  { id: "date", label: "约会甜蜜", icon: "❤️", gradient: "linear-gradient(135deg, #F27C88, #C084FC)" },
+  { id: "work", label: "职场通勤", icon: "💼", gradient: "linear-gradient(135deg, #8E8E93, #5B9BD5)" },
+  { id: "friends", label: "闺蜜聚会", icon: "✨", gradient: "linear-gradient(135deg, #FF9F43, #F27C88)" },
+  { id: "casual", label: "周末逛街", icon: "🛍️", gradient: "linear-gradient(135deg, #7BC67E, #5BB8C4)" },
+  { id: "sport", label: "健身运动", icon: "🏃", gradient: "linear-gradient(135deg, #5B9BD5, #C084FC)" },
+  { id: "formal", label: "正式场合", icon: "👔", gradient: "linear-gradient(135deg, #636366, #48484A)" },
+] as const;
 
 /** 中午 12 点前默认"今天"(0)，12 点后默认"明天"(1) */
 function getDefaultTargetDay(): number {
@@ -643,10 +654,16 @@ function RecommendationCard({
   rec,
   onToggleFavorite,
   onPreviewImage,
+  onShare,
+  published,
+  onPublish,
 }: {
   rec: Recommendation;
   onToggleFavorite: (outfitId: string) => void;
   onPreviewImage: (src: string, alt: string) => void;
+  onShare: (rec: Recommendation) => void;
+  published: boolean;
+  onPublish: (outfitId: string) => void;
 }) {
   return (
     <div
@@ -706,8 +723,45 @@ function RecommendationCard({
               </button>
             )}
           </div>
-          <button
-            onClick={() => onToggleFavorite(rec.outfitId)}
+          <div className="flex gap-2">
+            <button
+              onClick={() => onPublish(rec.outfitId)}
+              className="w-9 h-9 rounded-full flex items-center justify-center transition-all"
+              style={{
+                background: published
+                  ? "rgba(52,199,89,0.3)"
+                  : "rgba(255,255,255,0.2)",
+                backdropFilter: "blur(12px)",
+              }}
+              title={published ? "已发布（点击撤回）" : "发布到广场"}
+            >
+              {published ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                  <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                  <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                  <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                </svg>
+              )}
+            </button>
+            <button
+              onClick={() => onShare(rec)}
+              className="w-9 h-9 rounded-full flex items-center justify-center transition-all"
+              style={{ background: "rgba(255,255,255,0.2)", backdropFilter: "blur(12px)" }}
+              title="分享卡片"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                <polyline points="16 6 12 2 8 6" />
+                <line x1="12" y1="2" x2="12" y2="15" />
+              </svg>
+            </button>
+            <button
+              onClick={() => onToggleFavorite(rec.outfitId)}
             className="w-9 h-9 rounded-full flex items-center justify-center transition-all"
             style={{
               background: rec.isFavorite
@@ -729,6 +783,7 @@ function RecommendationCard({
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
           </button>
+          </div>
         </div>
       </div>
 
@@ -786,6 +841,8 @@ export default function RecommendationsPage() {
   const [rescoring, setRescoring] = useState(false);
   const [quickLoading, setQuickLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
+  const [shareRec, setShareRec] = useState<Recommendation | null>(null);
+  const [publishedOutfitIds, setPublishedOutfitIds] = useState<Set<string>>(new Set());
   const closePreview = useCallback(() => setPreviewImage(null), []);
 
   useModalKeyboard({
@@ -799,6 +856,50 @@ export default function RecommendationsPage() {
   const [weather, setWeather] = useState<WeatherSummary | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [targetDay, setTargetDay] = useState(getDefaultTargetDay);
+  const [selectedOccasion, setSelectedOccasion] = useState<string | null>(null);
+  const toast = useToast();
+
+  // Fetch published IDs
+  useEffect(() => {
+    fetch("/api/showcase?limit=50")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setPublishedOutfitIds(new Set(data.map((p: { outfitId: string }) => p.outfitId)));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handlePublishToShowcase = async (outfitId: string) => {
+    if (publishedOutfitIds.has(outfitId)) {
+      try {
+        const res = await fetch(`/api/showcase?limit=50`);
+        const posts = await res.json();
+        const post = posts.find((p: { outfitId: string }) => p.outfitId === outfitId);
+        if (post) {
+          await fetch(`/api/showcase/${post.id}`, { method: "DELETE" });
+          setPublishedOutfitIds((prev) => { const s = new Set(prev); s.delete(outfitId); return s; });
+          toast.success("已从广场撤回");
+        }
+      } catch { toast.error("撤回失败"); }
+    } else {
+      try {
+        const res = await fetch("/api/showcase", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ outfitId }),
+        });
+        if (res.ok) {
+          setPublishedOutfitIds((prev) => new Set(prev).add(outfitId));
+          toast.success("已发布到广场");
+        } else {
+          const data = await res.json();
+          toast.error(data.error || "发布失败");
+        }
+      } catch { toast.error("发布失败"); }
+    }
+  };
 
   const fetchWeather = useCallback(async (locId: string) => {
     setWeatherLoading(true);
@@ -892,7 +993,7 @@ export default function RecommendationsPage() {
       const res = await fetch("/api/recommendations/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ personImageId: selectedPerson, locationId: cityId, targetDay }),
+        body: JSON.stringify({ personImageId: selectedPerson, locationId: cityId, targetDay, occasion: selectedOccasion }),
       });
 
       if (!res.ok) {
@@ -1163,6 +1264,41 @@ export default function RecommendationsPage() {
           </div>
         )}
 
+        {/* Occasion selector */}
+        {phase !== "loading" && (
+          <div className="mb-6">
+            <div
+              className="flex gap-2.5 overflow-x-auto pb-2"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+              <style>{`.occasion-scroll::-webkit-scrollbar { display: none; }`}</style>
+              {OCCASIONS.map((o) => {
+                const selected = selectedOccasion === o.id;
+                return (
+                  <button
+                    key={o.id}
+                    onClick={() => !isProcessing && setSelectedOccasion(selected ? null : o.id)}
+                    disabled={isProcessing}
+                    className="occasion-scroll flex-shrink-0 rounded-2xl px-4 py-2.5 flex items-center gap-1.5 transition-all duration-200"
+                    style={{
+                      background: selected ? o.gradient : "rgba(0,0,0,0.03)",
+                      color: selected ? "#fff" : "#1D1D1F",
+                      boxShadow: selected ? "0 4px 14px rgba(242,124,136,0.3)" : "none",
+                      cursor: isProcessing ? "not-allowed" : "pointer",
+                      opacity: isProcessing ? 0.6 : 1,
+                      fontWeight: selected ? 600 : 400,
+                      fontSize: "0.875rem",
+                    }}
+                  >
+                    <span>{o.icon}</span>
+                    <span>{o.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Processing state */}
         {isProcessing && (
           <div className="glass rounded-3xl p-8 mb-8">
@@ -1380,6 +1516,9 @@ export default function RecommendationsPage() {
                   rec={rec}
                   onToggleFavorite={handleToggleFavorite}
                   onPreviewImage={(src, alt) => setPreviewImage({ src, alt })}
+                  onShare={setShareRec}
+                  published={publishedOutfitIds.has(rec.outfitId)}
+                  onPublish={handlePublishToShowcase}
                 />
               ))}
             </div>
@@ -1479,6 +1618,19 @@ export default function RecommendationsPage() {
             </button>
           </div>
         </div>
+      )}
+
+      {shareRec && (
+        <ShareCardModal
+          isOpen={!!shareRec}
+          onClose={() => setShareRec(null)}
+          outfitImage={shareRec.imagePath}
+          score={shareRec.score}
+          scoreDims={shareRec.scoreDims ? JSON.stringify(shareRec.scoreDims) : null}
+          evaluation={shareRec.evaluation}
+          topItem={shareRec.topItem ? { name: shareRec.topItem.name, imagePath: shareRec.topItem.imagePath } : null}
+          bottomItem={shareRec.bottomItem ? { name: shareRec.bottomItem.name, imagePath: shareRec.bottomItem.imagePath } : null}
+        />
       )}
     </div>
   );

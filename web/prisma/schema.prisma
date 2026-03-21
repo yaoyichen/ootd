@@ -39,20 +39,36 @@ model PersonImage {
 }
 
 model Outfit {
-  id              String    @id @default(cuid())
+  id              String          @id @default(cuid())
   personImageId   String
   topItemId       String?
   bottomItemId    String?
   resultImagePath String
-  isFavorite      Boolean   @default(false)
+  isFavorite      Boolean         @default(false)
   score           Float?
   scoreDims       String?
   evaluation      String?
   scoredAt        DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  showcasePosts   ShowcasePost[]
 
   @@unique([personImageId, topItemId, bottomItemId])
+}
+
+model ShowcasePost {
+  id         String   @id @default(cuid())
+  outfitId   String
+  outfit     Outfit   @relation(fields: [outfitId], references: [id], onDelete: Cascade)
+  caption    String?
+  likes      Int      @default(0)
+  tryonCount Int      @default(0)
+  isPublic   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([isPublic, createdAt])
+  @@index([isPublic, likes])
 }
 
 model DailyRecommendation {

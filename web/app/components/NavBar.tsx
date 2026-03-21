@@ -47,6 +47,18 @@ const NAV_ITEMS = [
     ),
   },
   {
+    href: "/showcase",
+    label: "广场",
+    icon: (active: boolean) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "#F27C88" : "#AEAEB2"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1.5" fill={active ? "rgba(242,124,136,0.2)" : "none"} />
+        <rect x="14" y="3" width="7" height="7" rx="1.5" fill={active ? "rgba(242,124,136,0.2)" : "none"} />
+        <rect x="3" y="14" width="7" height="7" rx="1.5" fill={active ? "rgba(242,124,136,0.2)" : "none"} />
+        <rect x="14" y="14" width="7" height="7" rx="1.5" fill={active ? "rgba(242,124,136,0.2)" : "none"} />
+      </svg>
+    ),
+  },
+  {
     href: "/me",
     label: "我的",
     icon: (active: boolean) => (
@@ -86,7 +98,7 @@ export function NavBar() {
             <Link
               key={item.href}
               href={href}
-              className="flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl transition-all duration-200"
+              className="flex flex-col items-center gap-0.5 py-1 px-2 rounded-2xl transition-all duration-200"
               style={{
                 background: active ? "rgba(242,124,136,0.1)" : "transparent",
               }}

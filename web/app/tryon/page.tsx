@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useToast } from "../components/ToastProvider";
 import { useModalKeyboard } from "../hooks/useModalKeyboard";
+import ShareCardModal from "../components/ShareCardModal";
 
 type Status = "idle" | "processing" | "completed" | "failed";
 
@@ -178,6 +179,8 @@ export default function TryonPage() {
   const [score, setScore] = useState<number | null>(null);
   const [evaluation, setEvaluation] = useState<string | null>(null);
   const [scoring, setScoring] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const [publishedToShowcase, setPublishedToShowcase] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
@@ -251,6 +254,7 @@ export default function TryonPage() {
     setIsCached(false);
     setScore(null);
     setEvaluation(null);
+    setPublishedToShowcase(false);
 
     try {
       const res = await fetch("/api/tryon", {
@@ -352,6 +356,37 @@ export default function TryonPage() {
       setError("评分请求失败，请重试");
     } finally {
       setScoring(false);
+    }
+  };
+
+  const handlePublishToShowcase = async () => {
+    if (!outfitId) return;
+    if (publishedToShowcase) {
+      try {
+        const res = await fetch(`/api/showcase?limit=50`);
+        const posts = await res.json();
+        const post = posts.find((p: { outfitId: string }) => p.outfitId === outfitId);
+        if (post) {
+          await fetch(`/api/showcase/${post.id}`, { method: "DELETE" });
+          setPublishedToShowcase(false);
+          toast.success("已从广场撤回");
+        }
+      } catch { toast.error("撤回失败"); }
+    } else {
+      try {
+        const res = await fetch("/api/showcase", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ outfitId }),
+        });
+        if (res.ok) {
+          setPublishedToShowcase(true);
+          toast.success("已发布到广场");
+        } else {
+          const data = await res.json();
+          toast.error(data.error || "发布失败");
+        }
+      } catch { toast.error("发布失败"); }
     }
   };
 
@@ -592,6 +627,44 @@ export default function TryonPage() {
                       下载图片
                     </a>
 
+                    <button
+                      onClick={() => setShowShare(true)}
+                      className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
+                      style={{ background: "rgba(255,255,255,0.2)", backdropFilter: "blur(12px)" }}
+                      title="分享卡片"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                        <polyline points="16 6 12 2 8 6" />
+                        <line x1="12" y1="2" x2="12" y2="15" />
+                      </svg>
+                    </button>
+
+                    {outfitId && (
+                      <button
+                        onClick={handlePublishToShowcase}
+                        className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
+                        style={{
+                          background: publishedToShowcase ? "rgba(52,199,89,0.5)" : "rgba(255,255,255,0.2)",
+                          backdropFilter: "blur(12px)",
+                        }}
+                        title={publishedToShowcase ? "已发布（点击撤回）" : "发布到广场"}
+                      >
+                        {publishedToShowcase ? (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M20 6 9 17l-5-5" />
+                          </svg>
+                        ) : (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                            <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                            <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                            <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                          </svg>
+                        )}
+                      </button>
+                    )}
+
                     {!isCached && (
                       <button
                         onClick={handleRegenerate}
@@ -711,6 +784,18 @@ export default function TryonPage() {
           </div>
         </div>
       </main>
+
+      {showShare && resultImage && (
+        <ShareCardModal
+          isOpen={showShare}
+          onClose={() => setShowShare(false)}
+          outfitImage={resultImage}
+          score={score}
+          evaluation={evaluation}
+          topItem={topData ? { name: topData.name, imagePath: topData.imagePath } : null}
+          bottomItem={bottomData ? { name: bottomData.name, imagePath: bottomData.imagePath } : null}
+        />
+      )}
     </div>
   );
 }
