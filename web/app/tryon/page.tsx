@@ -273,6 +273,11 @@ export default function TryonPage() {
       setOutfitId(data.outfit_id);
       setIsFavorite(data.isFavorite ?? false);
       setStatus("completed");
+
+      // Auto-trigger scoring after try-on completes
+      if (data.outfit_id && !data.isCached) {
+        triggerEvaluate(data.outfit_id);
+      }
     } catch {
       setStatus("failed");
       setError("网络错误，请重试");
@@ -301,6 +306,22 @@ export default function TryonPage() {
     setScore(null);
     setEvaluation(null);
     handleGenerate();
+  };
+
+  const triggerEvaluate = async (id: string) => {
+    setScoring(true);
+    try {
+      const res = await fetch(`/api/outfits/${id}/evaluate`, { method: "POST" });
+      const data = await res.json();
+      if (res.ok && data.score !== undefined) {
+        setScore(data.score);
+        setEvaluation(data.evaluation || null);
+      }
+    } catch (err) {
+      console.error("Auto evaluate error:", err);
+    } finally {
+      setScoring(false);
+    }
   };
 
   const handleEvaluate = async () => {
