@@ -6,6 +6,9 @@ import { useToast } from "../components/ToastProvider";
 import { SkeletonOutfitCard } from "../components/Skeleton";
 import { useModalKeyboard } from "../hooks/useModalKeyboard";
 import ShareCardModal from "../components/ShareCardModal";
+import { PageShell } from "../components/PageShell";
+import { RadarChart } from "../components/RadarChart";
+import { ScoreBadge } from "../components/ScoreBadge";
 
 interface ScoreDims {
   colorHarmony: number;
@@ -51,6 +54,7 @@ export default function FavoritesPage() {
   const [scoring, setScoring] = useState<Set<string>>(new Set());
   const [shareOutfit, setShareOutfit] = useState<OutfitRecord | null>(null);
   const [publishedOutfitIds, setPublishedOutfitIds] = useState<Set<string>>(new Set());
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const toast = useToast();
 
   useModalKeyboard({
@@ -192,15 +196,7 @@ export default function FavoritesPage() {
   };
 
   return (
-    <div className="relative min-h-screen" style={{ background: "#FFF8F6" }}>
-      <div
-        className="pointer-events-none fixed rounded-full"
-        style={{
-          top: "-15%", right: "-8%", width: 700, height: 700,
-          background: "radial-gradient(circle, rgba(242,124,136,0.18), transparent 70%)",
-          filter: "blur(80px)",
-        }}
-      />
+    <PageShell>
 
       {lightbox && (
         <div
@@ -233,20 +229,10 @@ export default function FavoritesPage() {
 
       <main className="relative z-10 max-w-6xl mx-auto px-6 pt-8 pb-20">
         <div className="text-center mb-10">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight" style={{ color: "#1D1D1F" }}>
-            <span
-              style={{
-                background: "linear-gradient(135deg, #F27C88, #FACDD0)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              我的收藏
-            </span>
+          <p className="text-[10px] tracking-[0.25em] uppercase" style={{ color: "rgba(255,255,255,0.25)" }}>FAVORITES</p>
+          <h1 className="text-2xl font-light text-primary">
+            <span className="gradient-text">我的收藏</span>
           </h1>
-          <p className="mt-2 text-sm" style={{ color: "#6E6E73" }}>
-            收藏的穿搭效果
-          </p>
         </div>
 
         {loading ? (
@@ -259,16 +245,16 @@ export default function FavoritesPage() {
           <div className="glass rounded-3xl p-16 text-center">
             <div
               className="w-20 h-20 rounded-3xl mx-auto mb-5 flex items-center justify-center"
-              style={{ background: "rgba(242,124,136,0.08)" }}
+              style={{ background: "rgba(255,255,255,0.04)" }}
             >
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F27C88" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#E8A0B0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
               </svg>
             </div>
-            <p className="text-base font-medium" style={{ color: "#1D1D1F" }}>还没有收藏的穿搭</p>
-            <p className="text-sm mt-2" style={{ color: "#AEAEB2" }}>
+            <p className="text-base font-medium text-primary">还没有收藏的穿搭</p>
+            <p className="text-sm mt-2 text-muted">
               前往
-              <a href="/tryon" className="font-semibold" style={{ color: "#F27C88" }}> 试穿 </a>
+              <a href="/tryon" className="font-semibold text-accent"> 试穿 </a>
               生成穿搭并点击收藏
             </p>
           </div>
@@ -286,14 +272,14 @@ export default function FavoritesPage() {
                 <div
                   key={outfit.id}
                   className="glass rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.01]"
-                  style={{ border: "1px solid rgba(0,0,0,0.06)" }}
+                  style={{ border: "1px solid rgba(255,255,255,0.06)" }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.boxShadow = "0 12px 40px rgba(242,124,136,0.1)";
-                    e.currentTarget.style.borderColor = "rgba(242,124,136,0.15)";
+                    e.currentTarget.style.boxShadow = "0 12px 40px rgba(232,160,176,0.1)";
+                    e.currentTarget.style.borderColor = "rgba(232,160,176,0.15)";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.boxShadow = "0 2px 20px rgba(0,0,0,0.04)";
-                    e.currentTarget.style.borderColor = "rgba(0,0,0,0.06)";
+                    e.currentTarget.style.boxShadow = "0 2px 20px rgba(0,0,0,0.3)";
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
                   }}
                 >
                   <button
@@ -315,85 +301,58 @@ export default function FavoritesPage() {
                     {/* Score + evaluation */}
                     {outfit.score != null && dims && (
                       <div className="mb-3">
-                        {/* Evaluation text - the hero */}
-                        {outfit.evaluation && (
-                          <div
-                            className="eval-card relative rounded-2xl px-4 py-3 mb-3"
-                            style={{
-                              background: "linear-gradient(135deg, rgba(242,124,136,0.06), rgba(250,205,208,0.12))",
-                              border: "1px solid rgba(242,124,136,0.12)",
-                              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6), 0 2px 12px rgba(242,124,136,0.06)",
-                            }}
+                        {/* Clickable score badge to toggle expansion */}
+                        <button
+                          onClick={() => setExpandedId(expandedId === outfit.id ? null : outfit.id)}
+                          className="flex items-center gap-2 cursor-pointer"
+                        >
+                          <ScoreBadge score={outfit.score} />
+                          <span className="text-[11px] text-muted">
+                            {expandedId === outfit.id ? "收起详情" : "查看详情"}
+                          </span>
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="rgba(255,255,255,0.25)"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            className={`transition-transform duration-200 ${expandedId === outfit.id ? "rotate-180" : ""}`}
                           >
-                            <span
-                              className="absolute -top-2 -left-1 text-2xl leading-none select-none"
-                              style={{ color: "rgba(242,124,136,0.3)" }}
-                            >
-                              &ldquo;
-                            </span>
-                            <p
-                              className="text-[13px] leading-relaxed font-medium"
-                              style={{ color: "#1D1D1F" }}
-                              dangerouslySetInnerHTML={{ __html: outfit.evaluation }}
-                            />
+                            <path d="M6 9l6 6 6-6" />
+                          </svg>
+                        </button>
+
+                        {/* Expanded: radar chart + evaluation text */}
+                        {expandedId === outfit.id && (
+                          <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="flex justify-center mb-3">
+                              <RadarChart dims={dims} score={outfit.score} size={120} />
+                            </div>
+                            {outfit.evaluation && (
+                              <div
+                                className="eval-card relative rounded-2xl px-4 py-3"
+                                style={{
+                                  background: "linear-gradient(135deg, rgba(232,160,176,0.06), rgba(212,160,200,0.08))",
+                                  border: "1px solid rgba(232,160,176,0.1)",
+                                  boxShadow: "0 2px 12px rgba(232,160,176,0.06)",
+                                }}
+                              >
+                                <span
+                                  className="absolute -top-2 -left-1 text-2xl leading-none select-none"
+                                  style={{ color: "rgba(232,160,176,0.3)" }}
+                                >
+                                  &ldquo;
+                                </span>
+                                <p
+                                  className="text-[13px] leading-relaxed font-medium text-primary"
+                                  dangerouslySetInnerHTML={{ __html: outfit.evaluation }}
+                                />
+                              </div>
+                            )}
                           </div>
                         )}
-                        {/* Score badge + mini radar row */}
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-                            style={{
-                              background: outfit.score >= 80
-                                ? "linear-gradient(135deg, rgba(52,199,89,0.1), rgba(52,199,89,0.05))"
-                                : outfit.score >= 60
-                                ? "linear-gradient(135deg, rgba(242,124,136,0.1), rgba(242,124,136,0.05))"
-                                : "linear-gradient(135deg, rgba(255,59,48,0.1), rgba(255,59,48,0.05))",
-                              border: `1px solid ${
-                                outfit.score >= 80
-                                  ? "rgba(52,199,89,0.15)"
-                                  : outfit.score >= 60
-                                  ? "rgba(242,124,136,0.15)"
-                                  : "rgba(255,59,48,0.15)"
-                              }`,
-                            }}
-                          >
-                            <span
-                              className="text-lg font-bold"
-                              style={{
-                                color: outfit.score >= 80 ? "#34C759" : outfit.score >= 60 ? "#F27C88" : "#FF3B30",
-                              }}
-                            >
-                              {outfit.score}
-                            </span>
-                            <span className="text-[10px] font-medium" style={{ color: "#AEAEB2" }}>分</span>
-                          </div>
-                          <div className="flex-1 flex gap-1">
-                            {DIM_LABELS.map((d) => {
-                              const val = dims[d.key];
-                              return (
-                                <div key={d.key} className="flex-1 flex flex-col items-center gap-0.5">
-                                  <div
-                                    className="w-full rounded-full overflow-hidden"
-                                    style={{ height: 3, background: "rgba(0,0,0,0.04)" }}
-                                  >
-                                    <div
-                                      className="h-full rounded-full"
-                                      style={{
-                                        width: `${val}%`,
-                                        background: val >= 80
-                                          ? "linear-gradient(90deg, #34C759, #30D158)"
-                                          : val >= 60
-                                          ? "linear-gradient(90deg, #F27C88, #FACDD0)"
-                                          : "linear-gradient(90deg, #FF3B30, #FF6961)",
-                                      }}
-                                    />
-                                  </div>
-                                  <span className="text-[8px]" style={{ color: "#AEAEB2" }}>{d.label}</span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
                       </div>
                     )}
 
@@ -401,7 +360,7 @@ export default function FavoritesPage() {
                       {person && (
                         <button
                           onClick={() => setLightbox(person.imagePath)}
-                          className="relative w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-pink-300 transition-all"
+                          className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-[rgba(232,160,176,0.5)] transition-all"
                           title={person.name}
                         >
                           <Image src={person.imagePath} alt={person.name} fill className="object-cover" />
@@ -410,7 +369,7 @@ export default function FavoritesPage() {
                       {top && (
                         <button
                           onClick={() => setLightbox(top.imagePath)}
-                          className="relative w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-pink-300 transition-all"
+                          className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-[rgba(232,160,176,0.5)] transition-all"
                           title={top.name}
                         >
                           <Image src={top.imagePath} alt={top.name} fill className="object-cover" />
@@ -419,14 +378,14 @@ export default function FavoritesPage() {
                       {bottom && (
                         <button
                           onClick={() => setLightbox(bottom.imagePath)}
-                          className="relative w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-pink-300 transition-all"
+                          className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-[rgba(232,160,176,0.5)] transition-all"
                           title={bottom.name}
                         >
                           <Image src={bottom.imagePath} alt={bottom.name} fill className="object-cover" />
                         </button>
                       )}
                       <div className="flex-1" />
-                      <span className="text-[10px] self-center" style={{ color: "#AEAEB2" }}>
+                      <span className="text-[10px] self-center text-muted">
                         {formatDate(outfit.updatedAt)}
                       </span>
                     </div>
@@ -434,7 +393,7 @@ export default function FavoritesPage() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleUnfavorite(outfit.id)}
-                        className="flex-1 py-2 rounded-full text-xs font-medium transition-colors"
+                        className="flex-1 py-2 min-h-10 rounded-full text-xs font-medium transition-colors"
                         style={{
                           background: "rgba(255,59,48,0.06)",
                           color: "#FF3B30",
@@ -446,11 +405,11 @@ export default function FavoritesPage() {
                       <a
                         href={outfit.resultImagePath}
                         download={`ootd-${outfit.id}.png`}
-                        className="flex-1 py-2 rounded-full text-xs font-medium text-center transition-colors"
+                        className="flex-1 py-2 min-h-10 rounded-full text-xs font-medium text-center transition-colors"
                         style={{
-                          background: "rgba(242,124,136,0.08)",
-                          color: "#F27C88",
-                          border: "1px solid rgba(242,124,136,0.12)",
+                          background: "rgba(232,160,176,0.08)",
+                          color: "#E8A0B0",
+                          border: "1px solid rgba(232,160,176,0.12)",
                         }}
                       >
                         下载
@@ -461,17 +420,17 @@ export default function FavoritesPage() {
                         className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-colors"
                         style={{
                           background: scoring.has(outfit.id)
-                            ? "rgba(242,124,136,0.12)"
-                            : "rgba(242,124,136,0.06)",
+                            ? "rgba(232,160,176,0.12)"
+                            : "rgba(232,160,176,0.08)",
                         }}
                         title={outfit.score != null ? "重新打分" : "AI 打分"}
                       >
                         {scoring.has(outfit.id) ? (
                           <svg width="14" height="14" viewBox="0 0 24 24" style={{ animation: "spin 1s linear infinite" }}>
-                            <circle cx="12" cy="12" r="10" fill="none" stroke="#F27C88" strokeWidth="2" strokeDasharray="31 31" strokeLinecap="round" />
+                            <circle cx="12" cy="12" r="10" fill="none" stroke="#E8A0B0" strokeWidth="2" strokeDasharray="31 31" strokeLinecap="round" />
                           </svg>
                         ) : (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F27C88" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E8A0B0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M12 20V10" />
                             <path d="M18 20V4" />
                             <path d="M6 20v-4" />
@@ -481,7 +440,7 @@ export default function FavoritesPage() {
                       <button
                         onClick={() => handleDelete(outfit.id)}
                         className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                        style={{ background: "rgba(0,0,0,0.04)" }}
+                        style={{ background: "rgba(255,255,255,0.04)" }}
                         title="删除"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#AEAEB2" strokeWidth="2" strokeLinecap="round">
@@ -491,10 +450,10 @@ export default function FavoritesPage() {
                       <button
                         onClick={() => setShareOutfit(outfit)}
                         className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                        style={{ background: "rgba(242,124,136,0.06)" }}
+                        style={{ background: "rgba(232,160,176,0.08)" }}
                         title="分享卡片"
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F27C88" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E8A0B0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
                           <polyline points="16 6 12 2 8 6" />
                           <line x1="12" y1="2" x2="12" y2="15" />
@@ -506,7 +465,7 @@ export default function FavoritesPage() {
                         style={{
                           background: publishedOutfitIds.has(outfit.id)
                             ? "rgba(52,199,89,0.1)"
-                            : "rgba(242,124,136,0.06)",
+                            : "rgba(232,160,176,0.08)",
                         }}
                         title={publishedOutfitIds.has(outfit.id) ? "已发布（点击撤回）" : "发布到广场"}
                       >
@@ -515,7 +474,7 @@ export default function FavoritesPage() {
                             <path d="M20 6 9 17l-5-5" />
                           </svg>
                         ) : (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F27C88" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E8A0B0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <rect x="3" y="3" width="7" height="7" rx="1.5" />
                             <rect x="14" y="3" width="7" height="7" rx="1.5" />
                             <rect x="3" y="14" width="7" height="7" rx="1.5" />
@@ -544,159 +503,6 @@ export default function FavoritesPage() {
           bottomItem={getItem(shareOutfit.bottomItemId) ? { name: getItem(shareOutfit.bottomItemId)!.name, imagePath: getItem(shareOutfit.bottomItemId)!.imagePath } : null}
         />
       )}
-    </div>
-  );
-}
-
-const DIM_LABELS: { key: keyof ScoreDims; label: string }[] = [
-  { key: "colorHarmony", label: "色彩" },
-  { key: "styleCohesion", label: "风格" },
-  { key: "trendiness", label: "时尚" },
-  { key: "practicality", label: "实穿" },
-  { key: "creativity", label: "创意" },
-];
-
-function RadarChart({
-  dims,
-  score,
-  size = 120,
-}: {
-  dims: ScoreDims;
-  score: number;
-  size?: number;
-}) {
-  const [hovered, setHovered] = useState<number | null>(null);
-
-  const cx = size / 2;
-  const cy = size / 2;
-  const maxR = size * 0.34;
-  const labelR = size * 0.46;
-  const levels = [20, 40, 60, 80, 100];
-  const n = DIM_LABELS.length;
-
-  const angleOf = (i: number) => (Math.PI * 2 * i) / n - Math.PI / 2;
-
-  const pointAt = (i: number, value: number) => {
-    const a = angleOf(i);
-    const r = (value / 100) * maxR;
-    return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
-  };
-
-  const gridPaths = levels.map((lv) => {
-    const pts = Array.from({ length: n }, (_, i) => pointAt(i, lv));
-    return pts.map((p) => `${p[0]},${p[1]}`).join(" ");
-  });
-
-  const dataPts = DIM_LABELS.map((d, i) => pointAt(i, dims[d.key]));
-  const dataPath = dataPts.map((p) => `${p[0]},${p[1]}`).join(" ");
-
-  const displayScore = hovered !== null ? dims[DIM_LABELS[hovered].key] : score;
-  const scoreColor =
-    displayScore >= 80 ? "#34C759" : displayScore >= 60 ? "#F27C88" : "#FF3B30";
-
-  return (
-    <div
-      className="relative inline-flex items-center justify-center flex-shrink-0"
-      style={{ width: size, height: size }}
-      onMouseLeave={() => setHovered(null)}
-    >
-      <svg width={size} height={size}>
-        {gridPaths.map((pts, i) => (
-          <polygon
-            key={i}
-            points={pts}
-            fill="none"
-            stroke="rgba(0,0,0,0.06)"
-            strokeWidth={0.5}
-          />
-        ))}
-        {Array.from({ length: n }, (_, i) => {
-          const [ex, ey] = pointAt(i, 100);
-          const active = hovered === i;
-          return (
-            <line
-              key={i}
-              x1={cx}
-              y1={cy}
-              x2={ex}
-              y2={ey}
-              stroke={active ? "#F27C88" : "rgba(0,0,0,0.04)"}
-              strokeWidth={active ? 1.5 : 0.5}
-              style={{ transition: "stroke 0.2s, stroke-width 0.2s" }}
-            />
-          );
-        })}
-        <polygon
-          points={dataPath}
-          fill="rgba(242,124,136,0.12)"
-          stroke="#F27C88"
-          strokeWidth={1.5}
-          strokeLinejoin="round"
-        />
-        {dataPts.map((p, i) => {
-          const active = hovered === i;
-          return (
-            <circle
-              key={i}
-              cx={p[0]}
-              cy={p[1]}
-              r={active ? 4 : 2}
-              fill="#F27C88"
-              stroke={active ? "white" : "none"}
-              strokeWidth={active ? 2 : 0}
-              style={{ transition: "r 0.2s" }}
-            />
-          );
-        })}
-        {DIM_LABELS.map((d, i) => {
-          const a = angleOf(i);
-          const lx = cx + labelR * Math.cos(a);
-          const ly = cy + labelR * Math.sin(a);
-          const active = hovered === i;
-          const dimVal = dims[d.key];
-          const label = active ? `${d.label} ${dimVal}` : d.label;
-          return (
-            <text
-              key={d.key}
-              x={lx}
-              y={ly}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fontSize={active ? 10 : 9}
-              fontWeight={active ? 700 : 500}
-              fill={active ? "#F27C88" : "#6E6E73"}
-              style={{ transition: "fill 0.2s, font-size 0.2s", cursor: "default" }}
-            >
-              {label}
-            </text>
-          );
-        })}
-        {DIM_LABELS.map((_, i) => {
-          const a = angleOf(i);
-          const hx = cx + labelR * Math.cos(a);
-          const hy = cy + labelR * Math.sin(a);
-          return (
-            <circle
-              key={`hit-${i}`}
-              cx={hx}
-              cy={hy}
-              r={12}
-              fill="transparent"
-              onMouseEnter={() => setHovered(i)}
-            />
-          );
-        })}
-      </svg>
-      <span
-        className="absolute font-bold pointer-events-none"
-        style={{
-          color: scoreColor,
-          fontSize: size * 0.15,
-          transition: "color 0.2s",
-        }}
-      >
-        {displayScore}
-      </span>
-    </div>
+    </PageShell>
   );
 }

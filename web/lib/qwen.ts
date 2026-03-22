@@ -121,7 +121,8 @@ export async function scoreOutfit(imagePath: string): Promise<ScoreResult> {
 export async function suggestCombinations(
   items: ItemMeta[],
   weatherContext?: string,
-  personDescription?: string
+  personDescription?: string,
+  occasion?: string
 ): Promise<CombinationSuggestion[]> {
   const tops = items.filter(
     (i) => i.category === "TOP" || i.category === "OUTERWEAR"
@@ -134,7 +135,7 @@ export async function suggestCombinations(
     throw new Error("衣橱中上衣或下装不足，无法生成推荐");
   }
 
-  const prompt = buildMatchingPrompt(tops, bottoms, weatherContext, personDescription);
+  const prompt = buildMatchingPrompt(tops, bottoms, weatherContext, personDescription, occasion);
 
   const { content: text } = await chatCompletion({
     model: "text",

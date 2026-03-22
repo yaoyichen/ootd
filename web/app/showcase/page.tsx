@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useToast } from "../components/ToastProvider";
 import { useModalKeyboard } from "../hooks/useModalKeyboard";
+import { PageShell } from "../components/PageShell";
+import { PersonPickerModal } from "../components/PersonPickerModal";
 
 type SortMode = "newest" | "hottest" | "random";
 
@@ -81,7 +83,6 @@ export default function ShowcasePage() {
   const [addedItemIds, setAddedItemIds] = useState<Set<string>>(new Set());
   const toast = useToast();
 
-  useModalKeyboard({ isOpen: !!selectedPostForTryon, onClose: () => setSelectedPostForTryon(null) });
   useModalKeyboard({ isOpen: !!tryonResult, onClose: () => setTryonResult(null) });
   useModalKeyboard({ isOpen: !!selectedItem, onClose: () => setSelectedItem(null) });
 
@@ -246,74 +247,16 @@ export default function ShowcasePage() {
   };
 
   return (
-    <div className="relative min-h-screen" style={{ background: "#FFF8F6" }}>
-      <div
-        className="pointer-events-none fixed rounded-full"
-        style={{
-          top: "-15%", right: "-8%", width: 700, height: 700,
-          background: "radial-gradient(circle, rgba(242,124,136,0.15), transparent 70%)",
-          filter: "blur(80px)",
-        }}
-      />
+    <PageShell>
 
       {/* Person Picker Modal */}
       {selectedPostForTryon && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm"
-          onClick={() => setSelectedPostForTryon(null)}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div
-            className="w-full max-w-lg mx-4 mb-4 sm:mb-0 rounded-3xl p-6 flex flex-col gap-4 max-h-[80vh]"
-            style={{ background: "rgba(255,255,255,0.96)", backdropFilter: "blur(20px)" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold" style={{ color: "#1D1D1F" }}>选择人像试穿同款</h3>
-              <button
-                onClick={() => setSelectedPostForTryon(null)}
-                className="w-8 h-8 rounded-full flex items-center justify-center"
-                style={{ background: "rgba(0,0,0,0.05)" }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" strokeWidth="2" strokeLinecap="round">
-                  <path d="M18 6 6 18M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            {persons.length === 0 ? (
-              <div className="py-10 text-center">
-                <p className="text-sm mb-3" style={{ color: "#AEAEB2" }}>暂无人像</p>
-                <a
-                  href="/tryon"
-                  className="px-5 py-2 rounded-full text-sm font-semibold text-white inline-block"
-                  style={{ background: "linear-gradient(135deg, #F27C88, #FACDD0)" }}
-                >
-                  去上传人像
-                </a>
-              </div>
-            ) : (
-              <div className="grid grid-cols-3 gap-3 overflow-y-auto">
-                {persons.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => handleTryon(p.id)}
-                    className="rounded-2xl overflow-hidden transition-all duration-200 hover:ring-2 hover:ring-pink-300"
-                    style={{ border: "2px solid transparent" }}
-                  >
-                    <div className="relative" style={{ aspectRatio: "3/4" }}>
-                      <Image src={p.imagePath} alt={p.name} fill className="object-cover" />
-                    </div>
-                    <div className="p-2">
-                      <p className="text-xs font-medium truncate" style={{ color: "#1D1D1F" }}>{p.name}</p>
-                      {p.isDefault && <span className="text-[10px]" style={{ color: "#F27C88" }}>默认</span>}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        <PersonPickerModal
+          persons={persons}
+          selected={null}
+          onSelect={(id) => handleTryon(id)}
+          onClose={() => setSelectedPostForTryon(null)}
+        />
       )}
 
       {/* Tryon Result Modal */}
@@ -326,7 +269,7 @@ export default function ShowcasePage() {
         >
           <div
             className="w-full max-w-md mx-4 mb-4 sm:mb-0 rounded-3xl overflow-hidden max-h-[92vh] overflow-y-auto"
-            style={{ background: "rgba(255,255,255,0.96)", backdropFilter: "blur(20px)" }}
+            style={{ background: "rgba(20,20,22,0.95)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.06)" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Image */}
@@ -370,8 +313,8 @@ export default function ShowcasePage() {
                   download="ootd-showcase-tryon.png"
                   className="px-5 py-2 rounded-full text-xs font-semibold text-white transition-all"
                   style={{
-                    background: "linear-gradient(135deg, #F27C88, #FACDD0)",
-                    boxShadow: "0 4px 16px rgba(242,124,136,0.3)",
+                    background: "linear-gradient(135deg, #E8A0B0, #D4A0C8)",
+                    boxShadow: "0 4px 16px rgba(232,160,176,0.3)",
                   }}
                 >
                   下载图片
@@ -386,20 +329,20 @@ export default function ShowcasePage() {
                 {tryonResult.scoring ? (
                   <div className="flex items-center justify-center gap-2 py-2">
                     <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" style={{ animation: "spin 1s linear infinite" }}>
-                      <circle cx="12" cy="12" r="10" stroke="rgba(242,124,136,0.2)" strokeWidth="2.5" fill="none" />
-                      <path d="M12 2a10 10 0 0 1 10 10" stroke="#F27C88" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+                      <circle cx="12" cy="12" r="10" stroke="rgba(232,160,176,0.2)" strokeWidth="2.5" fill="none" />
+                      <path d="M12 2a10 10 0 0 1 10 10" stroke="#E8A0B0" strokeWidth="2.5" strokeLinecap="round" fill="none" />
                     </svg>
-                    <span className="text-sm font-medium" style={{ color: "#F27C88" }}>AI 评分中...</span>
+                    <span className="text-sm font-medium text-accent">AI 评分中...</span>
                   </div>
                 ) : tryonResult.score !== null ? (
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0">
                       <div className="relative inline-flex items-center justify-center" style={{ width: 56, height: 56 }}>
                         <svg width={56} height={56} className="-rotate-90">
-                          <circle cx={28} cy={28} r={24} fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth={4} />
+                          <circle cx={28} cy={28} r={24} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={4} />
                           <circle
                             cx={28} cy={28} r={24} fill="none"
-                            stroke={tryonResult.score >= 80 ? "#34C759" : tryonResult.score >= 60 ? "#F27C88" : "#FF3B30"}
+                            stroke={tryonResult.score >= 80 ? "#34C759" : tryonResult.score >= 60 ? "#E8A0B0" : "#FF3B30"}
                             strokeWidth={4} strokeLinecap="round"
                             strokeDasharray={2 * Math.PI * 24}
                             strokeDashoffset={2 * Math.PI * 24 * (1 - tryonResult.score / 100)}
@@ -408,26 +351,26 @@ export default function ShowcasePage() {
                         </svg>
                         <span
                           className="absolute text-sm font-bold"
-                          style={{ color: tryonResult.score >= 80 ? "#34C759" : tryonResult.score >= 60 ? "#F27C88" : "#FF3B30" }}
+                          style={{ color: tryonResult.score >= 80 ? "#34C759" : tryonResult.score >= 60 ? "#E8A0B0" : "#FF3B30" }}
                         >
                           {tryonResult.score}
                         </span>
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold mb-1" style={{ color: "#1D1D1F" }}>AI 穿搭评分</p>
+                      <p className="text-xs font-semibold mb-1 text-primary">AI 穿搭评分</p>
                       {tryonResult.evaluation && (
-                        <p className="text-xs leading-relaxed" style={{ color: "#6E6E73" }} dangerouslySetInnerHTML={{ __html: tryonResult.evaluation }} />
+                        <p className="text-xs leading-relaxed text-secondary" dangerouslySetInnerHTML={{ __html: tryonResult.evaluation }} />
                       )}
                     </div>
                   </div>
                 ) : (
                   <button
                     onClick={() => triggerEvaluate(tryonResult.outfitId)}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-colors"
-                    style={{ color: "#F27C88", background: "rgba(242,124,136,0.06)" }}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-colors text-accent"
+                    style={{ background: "rgba(232,160,176,0.06)" }}
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F27C88" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8A0B0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z" />
                     </svg>
                     AI 评分
@@ -437,19 +380,19 @@ export default function ShowcasePage() {
 
               {/* Items - add to wardrobe */}
               <div>
-                <p className="text-xs font-semibold mb-2.5" style={{ color: "#1D1D1F" }}>同款单品</p>
+                <p className="text-xs font-semibold mb-2.5 text-primary">同款单品</p>
                 <div className="flex flex-col gap-2">
                   {tryonResult.sourcePost.topItem && (
                     <div
                       className="flex items-center gap-3 p-2.5 rounded-2xl"
-                      style={{ background: "rgba(0,0,0,0.02)", border: "1px solid rgba(0,0,0,0.04)" }}
+                      style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
                     >
                       <div className="relative w-12 h-12 rounded-xl overflow-hidden flex-shrink-0">
                         <Image src={tryonResult.sourcePost.topItem.imagePath} alt={tryonResult.sourcePost.topItem.name} fill className="object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium truncate" style={{ color: "#1D1D1F" }}>{tryonResult.sourcePost.topItem.name}</p>
-                        <p className="text-[10px]" style={{ color: "#AEAEB2" }}>{CATEGORY_LABELS[tryonResult.sourcePost.topItem.category] || tryonResult.sourcePost.topItem.category}</p>
+                        <p className="text-xs font-medium truncate text-primary">{tryonResult.sourcePost.topItem.name}</p>
+                        <p className="text-[10px] text-muted">{CATEGORY_LABELS[tryonResult.sourcePost.topItem.category] || tryonResult.sourcePost.topItem.category}</p>
                       </div>
                       <button
                         onClick={() => handleAddItemFromResult(tryonResult.sourcePost.topItem!, tryonResult.sourcePost.id)}
@@ -458,7 +401,7 @@ export default function ShowcasePage() {
                         style={{
                           background: addedItemIds.has(tryonResult.sourcePost.topItem.id)
                             ? "rgba(52,199,89,0.1)"
-                            : "linear-gradient(135deg, #F27C88, #FACDD0)",
+                            : "linear-gradient(135deg, #E8A0B0, #D4A0C8)",
                           color: addedItemIds.has(tryonResult.sourcePost.topItem.id) ? "#34C759" : "#fff",
                         }}
                       >
@@ -469,14 +412,14 @@ export default function ShowcasePage() {
                   {tryonResult.sourcePost.bottomItem && (
                     <div
                       className="flex items-center gap-3 p-2.5 rounded-2xl"
-                      style={{ background: "rgba(0,0,0,0.02)", border: "1px solid rgba(0,0,0,0.04)" }}
+                      style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
                     >
                       <div className="relative w-12 h-12 rounded-xl overflow-hidden flex-shrink-0">
                         <Image src={tryonResult.sourcePost.bottomItem.imagePath} alt={tryonResult.sourcePost.bottomItem.name} fill className="object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium truncate" style={{ color: "#1D1D1F" }}>{tryonResult.sourcePost.bottomItem.name}</p>
-                        <p className="text-[10px]" style={{ color: "#AEAEB2" }}>{CATEGORY_LABELS[tryonResult.sourcePost.bottomItem.category] || tryonResult.sourcePost.bottomItem.category}</p>
+                        <p className="text-xs font-medium truncate text-primary">{tryonResult.sourcePost.bottomItem.name}</p>
+                        <p className="text-[10px] text-muted">{CATEGORY_LABELS[tryonResult.sourcePost.bottomItem.category] || tryonResult.sourcePost.bottomItem.category}</p>
                       </div>
                       <button
                         onClick={() => handleAddItemFromResult(tryonResult.sourcePost.bottomItem!, tryonResult.sourcePost.id)}
@@ -485,7 +428,7 @@ export default function ShowcasePage() {
                         style={{
                           background: addedItemIds.has(tryonResult.sourcePost.bottomItem.id)
                             ? "rgba(52,199,89,0.1)"
-                            : "linear-gradient(135deg, #F27C88, #FACDD0)",
+                            : "linear-gradient(135deg, #E8A0B0, #D4A0C8)",
                           color: addedItemIds.has(tryonResult.sourcePost.bottomItem.id) ? "#34C759" : "#fff",
                         }}
                       >
@@ -510,37 +453,37 @@ export default function ShowcasePage() {
         >
           <div
             className="w-full max-w-sm mx-4 mb-4 sm:mb-0 rounded-3xl overflow-hidden"
-            style={{ background: "rgba(255,255,255,0.96)", backdropFilter: "blur(20px)" }}
+            style={{ background: "rgba(20,20,22,0.95)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.06)" }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative" style={{ aspectRatio: "1" }}>
               <Image src={selectedItem.imagePath} alt={selectedItem.name} fill className="object-cover" />
             </div>
             <div className="p-5">
-              <h3 className="text-base font-bold mb-3" style={{ color: "#1D1D1F" }}>{selectedItem.name}</h3>
+              <h3 className="text-base font-bold mb-3 text-primary">{selectedItem.name}</h3>
               <div className="flex flex-wrap gap-2 mb-4">
                 {selectedItem.category && (
-                  <span className="text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ background: "rgba(242,124,136,0.08)", color: "#F27C88" }}>
+                  <span className="text-[11px] font-medium px-2.5 py-1 rounded-full text-accent" style={{ background: "rgba(232,160,176,0.08)" }}>
                     {CATEGORY_LABELS[selectedItem.category] || selectedItem.category}
                   </span>
                 )}
                 {selectedItem.color && (
-                  <span className="text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ background: "rgba(0,0,0,0.04)", color: "#6E6E73" }}>
+                  <span className="text-[11px] font-medium px-2.5 py-1 rounded-full text-secondary" style={{ background: "rgba(255,255,255,0.04)" }}>
                     {selectedItem.color}
                   </span>
                 )}
                 {selectedItem.style && (
-                  <span className="text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ background: "rgba(0,0,0,0.04)", color: "#6E6E73" }}>
+                  <span className="text-[11px] font-medium px-2.5 py-1 rounded-full text-secondary" style={{ background: "rgba(255,255,255,0.04)" }}>
                     {selectedItem.style}
                   </span>
                 )}
                 {selectedItem.season && (
-                  <span className="text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ background: "rgba(0,0,0,0.04)", color: "#6E6E73" }}>
+                  <span className="text-[11px] font-medium px-2.5 py-1 rounded-full text-secondary" style={{ background: "rgba(255,255,255,0.04)" }}>
                     {selectedItem.season}
                   </span>
                 )}
                 {selectedItem.material && (
-                  <span className="text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ background: "rgba(0,0,0,0.04)", color: "#6E6E73" }}>
+                  <span className="text-[11px] font-medium px-2.5 py-1 rounded-full text-secondary" style={{ background: "rgba(255,255,255,0.04)" }}>
                     {selectedItem.material}
                   </span>
                 )}
@@ -551,8 +494,8 @@ export default function ShowcasePage() {
                   disabled={copyingItem}
                   className="flex-1 py-3 rounded-full text-sm font-semibold text-white transition-all"
                   style={{
-                    background: "linear-gradient(135deg, #F27C88, #FACDD0)",
-                    boxShadow: "0 4px 16px rgba(242,124,136,0.25)",
+                    background: "linear-gradient(135deg, #E8A0B0, #D4A0C8)",
+                    boxShadow: "0 4px 16px rgba(232,160,176,0.25)",
                     opacity: copyingItem ? 0.7 : 1,
                   }}
                 >
@@ -560,8 +503,8 @@ export default function ShowcasePage() {
                 </button>
                 <button
                   onClick={() => setSelectedItem(null)}
-                  className="px-5 py-3 rounded-full text-sm font-medium"
-                  style={{ background: "rgba(0,0,0,0.04)", color: "#6E6E73" }}
+                  className="px-5 py-3 rounded-full text-sm font-medium text-secondary"
+                  style={{ background: "rgba(255,255,255,0.04)" }}
                 >
                   关闭
                 </button>
@@ -578,15 +521,15 @@ export default function ShowcasePage() {
             <svg className="w-12 h-12" viewBox="0 0 48 48" style={{ animation: "spin 1s linear infinite" }}>
               <defs>
                 <linearGradient id="scg" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#F27C88" />
-                  <stop offset="100%" stopColor="#FACDD0" />
+                  <stop offset="0%" stopColor="#E8A0B0" />
+                  <stop offset="100%" stopColor="#D4A0C8" />
                 </linearGradient>
               </defs>
-              <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(242,124,136,0.12)" strokeWidth="3" />
+              <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(232,160,176,0.12)" strokeWidth="3" />
               <circle cx="24" cy="24" r="20" fill="none" stroke="url(#scg)" strokeWidth="3" strokeLinecap="round" strokeDasharray="90 126" />
             </svg>
-            <p className="text-sm font-medium" style={{ color: "#1D1D1F" }}>AI 试穿生成中...</p>
-            <p className="text-xs" style={{ color: "#AEAEB2" }}>通常需要 10-30 秒</p>
+            <p className="text-sm font-medium text-primary">AI 试穿生成中...</p>
+            <p className="text-xs text-muted">通常需要 10-30 秒</p>
           </div>
         </div>
       )}
@@ -594,18 +537,11 @@ export default function ShowcasePage() {
       <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-24">
         {/* Header */}
         <div className="text-center mb-6">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight" style={{ color: "#1D1D1F" }}>
-            <span
-              style={{
-                background: "linear-gradient(135deg, #F27C88, #C084FC)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              穿搭广场
-            </span>
+          <p className="text-[10px] tracking-[0.25em] uppercase" style={{ color: "rgba(255,255,255,0.25)" }}>SHOWCASE</p>
+          <h1 className="text-2xl font-light text-primary">
+            <span className="gradient-text">穿搭广场</span>
           </h1>
-          <p className="mt-2 text-sm" style={{ color: "#6E6E73" }}>
+          <p className="mt-2 text-sm text-secondary">
             发现精彩穿搭，一键试穿同款
           </p>
         </div>
@@ -619,10 +555,10 @@ export default function ShowcasePage() {
               className="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200"
               style={{
                 background: sort === tab.key
-                  ? "linear-gradient(135deg, #F27C88, #FACDD0)"
-                  : "rgba(0,0,0,0.03)",
-                color: sort === tab.key ? "#fff" : "#6E6E73",
-                boxShadow: sort === tab.key ? "0 2px 12px rgba(242,124,136,0.3)" : "none",
+                  ? "linear-gradient(135deg, rgba(200,120,140,0.9), rgba(180,140,200,0.9))"
+                  : "rgba(255,255,255,0.03)",
+                color: sort === tab.key ? "#fff" : "rgba(255,255,255,0.4)",
+                boxShadow: sort === tab.key ? "0 2px 12px rgba(232,160,176,0.3)" : "none",
               }}
             >
               {tab.label}
@@ -637,12 +573,12 @@ export default function ShowcasePage() {
               <div
                 key={i}
                 className="break-inside-avoid rounded-3xl overflow-hidden animate-pulse"
-                style={{ background: "rgba(0,0,0,0.04)" }}
+                style={{ background: "rgba(255,255,255,0.04)" }}
               >
                 <div style={{ aspectRatio: "3/4" }} />
                 <div className="p-4 space-y-2">
-                  <div className="h-3 rounded-full w-2/3" style={{ background: "rgba(0,0,0,0.06)" }} />
-                  <div className="h-3 rounded-full w-1/3" style={{ background: "rgba(0,0,0,0.04)" }} />
+                  <div className="h-3 rounded-full w-2/3" style={{ background: "rgba(255,255,255,0.06)" }} />
+                  <div className="h-3 rounded-full w-1/3" style={{ background: "rgba(255,255,255,0.04)" }} />
                 </div>
               </div>
             ))}
@@ -651,19 +587,19 @@ export default function ShowcasePage() {
           <div className="glass rounded-3xl p-16 text-center">
             <div
               className="w-20 h-20 rounded-3xl mx-auto mb-5 flex items-center justify-center"
-              style={{ background: "rgba(242,124,136,0.08)" }}
+              style={{ background: "rgba(232,160,176,0.08)" }}
             >
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F27C88" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#E8A0B0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="3" width="7" height="7" rx="1.5" />
                 <rect x="14" y="3" width="7" height="7" rx="1.5" />
                 <rect x="3" y="14" width="7" height="7" rx="1.5" />
                 <rect x="14" y="14" width="7" height="7" rx="1.5" />
               </svg>
             </div>
-            <p className="text-base font-medium" style={{ color: "#1D1D1F" }}>广场还没有穿搭</p>
-            <p className="text-sm mt-2" style={{ color: "#AEAEB2" }}>
+            <p className="text-base font-medium text-primary">广场还没有穿搭</p>
+            <p className="text-sm mt-2 text-muted">
               去
-              <a href="/favorites" className="font-semibold" style={{ color: "#F27C88" }}> 收藏页 </a>
+              <a href="/favorites" className="font-semibold text-accent"> 收藏页 </a>
               发布你的第一个穿搭吧
             </p>
           </div>
@@ -682,7 +618,7 @@ export default function ShowcasePage() {
           </div>
         )}
       </main>
-    </div>
+    </PageShell>
   );
 }
 
@@ -702,7 +638,7 @@ function ShowcaseCard({
   return (
     <div
       className="break-inside-avoid glass rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.01]"
-      style={{ border: "1px solid rgba(0,0,0,0.06)" }}
+      style={{ border: "1px solid rgba(255,255,255,0.06)" }}
     >
       {/* Result image */}
       <div className="relative" style={{ aspectRatio: "3/4" }}>
@@ -723,7 +659,7 @@ function ShowcaseCard({
               background: post.outfit.score >= 80
                 ? "rgba(52,199,89,0.85)"
                 : post.outfit.score >= 60
-                  ? "rgba(242,124,136,0.85)"
+                  ? "rgba(232,160,176,0.85)"
                   : "rgba(255,59,48,0.85)",
               color: "#fff",
               backdropFilter: "blur(8px)",
@@ -737,7 +673,7 @@ function ShowcaseCard({
       <div className="p-3">
         {/* Caption */}
         {post.caption && (
-          <p className="text-xs mb-2 leading-relaxed" style={{ color: "#1D1D1F" }}>
+          <p className="text-xs mb-2 leading-relaxed text-primary">
             {post.caption}
           </p>
         )}
@@ -747,7 +683,7 @@ function ShowcaseCard({
           {post.topItem && (
             <button
               onClick={() => onItemClick(post.topItem!)}
-              className="relative w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-pink-300 transition-all"
+              className="relative w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-[rgba(232,160,176,0.5)] transition-all"
               title={post.topItem.name}
             >
               <Image src={post.topItem.imagePath} alt={post.topItem.name} fill className="object-cover" />
@@ -756,7 +692,7 @@ function ShowcaseCard({
           {post.bottomItem && (
             <button
               onClick={() => onItemClick(post.bottomItem!)}
-              className="relative w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-pink-300 transition-all"
+              className="relative w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-[rgba(232,160,176,0.5)] transition-all"
               title={post.bottomItem.name}
             >
               <Image src={post.bottomItem.imagePath} alt={post.bottomItem.name} fill className="object-cover" />
@@ -771,8 +707,8 @@ function ShowcaseCard({
             disabled={liked}
             className="flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium transition-all"
             style={{
-              background: liked ? "rgba(255,59,48,0.08)" : "rgba(0,0,0,0.03)",
-              color: liked ? "#FF3B30" : "#AEAEB2",
+              background: liked ? "rgba(255,59,48,0.15)" : "rgba(255,255,255,0.03)",
+              color: liked ? "#FF3B30" : "rgba(255,255,255,0.25)",
             }}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill={liked ? "#FF3B30" : "none"} stroke={liked ? "#FF3B30" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -781,7 +717,7 @@ function ShowcaseCard({
             {post.likes}
           </button>
 
-          <span className="text-[11px]" style={{ color: "#AEAEB2" }}>
+          <span className="text-[11px] text-muted">
             {post.tryonCount}次试穿
           </span>
 
@@ -789,10 +725,10 @@ function ShowcaseCard({
 
           <button
             onClick={onTryon}
-            className="px-3 py-1.5 rounded-full text-[11px] font-semibold text-white transition-all"
+            className="px-4 py-2 rounded-full text-[11px] font-semibold text-white transition-all"
             style={{
-              background: "linear-gradient(135deg, #F27C88, #FACDD0)",
-              boxShadow: "0 2px 8px rgba(242,124,136,0.25)",
+              background: "linear-gradient(135deg, #E8A0B0, #D4A0C8)",
+              boxShadow: "0 2px 8px rgba(232,160,176,0.25)",
             }}
           >
             试穿同款

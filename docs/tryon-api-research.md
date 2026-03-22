@@ -88,6 +88,7 @@
 | 在线体验（北京） | https://bailian.console.aliyun.com/?tab=model#/efm/model_experience_center/vision?currentTab=imageGenerate&modelId=qwen-image-max |
 
 ### 可用模型
+价格列表 https://help.aliyun.com/zh/model-studio/models?spm=a2c4g.11186623.0.0.47696262zdU4Pw#4219acf25en2i
 
 | 模型 ID | 说明 |
 |---------|------|
@@ -197,6 +198,8 @@ content 数组传入 3 个 image 对象（人像 + 上衣 + 下装）+ 1 个 tex
 
 ---
 
+---
+
 ## 三、火山引擎 — 图片换装 V2
 
 ### 产品信息
@@ -256,46 +259,159 @@ content 数组传入 3 个 image 对象（人像 + 上衣 + 下装）+ 1 个 tex
 
 ---
 
-## 五、对比总结
+## 五、阿里云百炼 — 万相 wan2.5-i2i-preview 图像编辑方案
 
-| 维度 | 阿里云 aitryon-plus | Qwen-Image-2.0-Pro | 火山引擎 图片换装 V2 |
-|------|--------------------|--------------------|---------------------|
-| 上下装同时试穿 | ✅ 原生支持（独立字段） | ✅ 多图输入（最多 3 张） | ✅ 支持（req_key 模式） |
-| API 风格 | REST 异步（需轮询） | REST **同步**（直接返回） | REST 同步 + 异步 |
-| 鉴权方式 | Bearer Token（简单） | Bearer Token（简单） | AK/SK 签名（稍复杂） |
-| 免费额度 | ✅ 有（新用户 400 张） | ✅ 有（新用户 100 张） | ❓ 未公开 |
-| 单价 | ~$0.072/张 | $0.075/张 | 未公开 |
-| 面部/身材一致性 | ⭐⭐⭐ 专用模型，最佳 | ⭐⭐ 通用模型，依赖 prompt | ⭐⭐⭐ 专用模型 |
-| Prompt 灵活性 | ❌ 无 prompt，纯图片输入 | ✅ 自然语言指令，高灵活度 | ❌ 无 prompt |
-| 多图输出 | ❌ 单图 | ✅ 1–6 张候选 | ❌ 单图 |
-| Base64 直传 | ❌ 需先上传 OSS | ✅ 支持 | ✅ 支持 |
-| 辅助工具链 | parsing + refiner | 无 | 无 |
-| 文档质量 | 高，中英双语 | 高，中英双语 | 中，需登录查看完整版 |
-| 结果 URL 有效期 | 24 小时 | 24 小时 | 未公开 |
-| 成熟度 | 高 | 中高 | 高 |
+### 产品信息
+
+| 项目 | 内容 |
+|------|------|
+| 模型名 | `wan2.5-i2i-preview`（图像编辑模式） |
+| 所属平台 | 阿里云百炼（Bailian / DashScope） |
+| API 文档 | https://help.aliyun.com/zh/model-studio/wan2-5-image-edit-api-reference |
+| 使用指南 | https://help.aliyun.com/zh/model-studio/wan-image-edit-2-5 |
+
+### 核心能力
+
+通义万相 2.5 图像编辑模型，支持单图编辑和多图融合：
+
+- **单图编辑**：输入一张图 + prompt，通过文字指令修改图片内容（如换装、换风格）
+- **多图融合**：输入多张图 + prompt，将多图元素融合到一张图中
+
+### OOTD 场景用法
+
+通过 `input.images` 数组传入 3 张图片（人像 + 上衣 + 下装）+ prompt 指令：
+
+```json
+{
+  "model": "wan2.5-i2i-preview",
+  "input": {
+    "images": ["人像 Base64", "上衣 Base64", "下装 Base64"],
+    "prompt": "图1是一个人的全身照，请让这个人穿上图2中的上衣和图3中的裤子...",
+    "negative_prompt": "面部变化, 五官变形, 姿势改变..."
+  },
+  "parameters": {
+    "n": 1,
+    "size": "768*1152"
+  }
+}
+```
+
+### API 调用方式
+
+- **协议**：REST HTTP，**异步接口**（提交 + 轮询）
+- **Endpoint**：`POST https://dashscope.aliyuncs.com/api/v1/services/aigc/image2image/image-synthesis`
+- **鉴权**：Bearer Token + `X-DashScope-Async: enable`
+- **流程**：POST 提交任务 → 获取 `task_id` → 轮询 `GET /api/v1/tasks/{task_id}`
+- **输入格式**：支持公网 URL、Base64 编码、`file://` 本地路径
+
+### 定价
+
+- `wan2.5-i2i-preview`：**¥0.20/张**
+- 新用户免费额度：**50 张**（开通后 90 天内有效）
+- 按成功生成的图片张数计费，失败不计费
+
+### 实测结果（2026-03-21）
+
+使用本地衣橱图片（白色Polo衫 928×1120 + 白色阔腿裤 672×1536 + 人像）测试：
+
+- ✅ **多图输入成功**：images 数组传 3 张 Base64 图片，正常生成
+- ✅ **试穿效果优秀**：面部保持自然、衣服融合度高、光线真实
+- ⏱️ **耗时 ~46 秒**（异步轮询，比 qwen-image-2.0 的 ~15s 慢）
+- ⚠️ **图片最小尺寸 384px**：低于此尺寸会报 `Image dimensions must be in [384, 5000]`
+- ❌ 不支持 multimodal-generation 同步端点
+
+### 优势
+
+- **价格与 qwen-image-2.0 相同**（¥0.2/张），万相系列图编辑能力更强
+- 支持 Base64 直传，与现有 `lib/tryon.ts` 管线兼容
+- 共用 DashScope API Key，零额外接入成本
+
+### 劣势
+
+- **异步接口**，需轮询等待 ~45s（vs qwen-image-2.0 同步 ~15s）
+- **图片最小 384px** 限制，小图需前置缩放
+- Preview 阶段，API 可能变动
+
+### 成熟度评估
+
+- 万相 2.5 系列为阿里最新图像编辑模型
+- 多图融合能力经实测验证，试穿场景可用
+- Preview 阶段，稳定性待观察
+- **综合评分：中高**
 
 ---
 
-## 六、建议
+## 六、qwen-image 系列多图兼容性测试（2026-03-21）
 
-### 精确试穿首选：阿里云百炼 `aitryon-plus`
+以下模型均使用 `multimodal-generation` 同步端点测试 3 图输入（人像 + 上衣 + 下装）：
+
+| 模型 ID | 价格 | 支持 3 图试穿 | 备注 |
+|---------|------|:---:|------|
+| `qwen-image-2.0` | ¥0.2/张 | ✅ | **当前默认**，已在生产使用 |
+| `qwen-image-2.0-pro` | ¥0.5/张 | ✅ | 质量更好 |
+| `qwen-image-plus` | ¥0.2/张 | ❌ | `content parameter's length invalid` |
+| `qwen-image` | ¥0.25/张 | ❌ | `content parameter's length invalid` |
+| `qwen-image-max` | ¥0.5/张 | ❌ | `content parameter's length invalid` |
+| `wan2.5-i2i-preview` | ¥0.2/张 | ✅* | 需使用异步 `image2image` 端点 |
+
+> **结论**：`multimodal-generation` 端点仅 `qwen-image-2.0` 系列支持 3 图输入。其他 qwen-image 模型（plus/max/基础版）仅支持 1-2 图。`wan2.5-i2i-preview` 通过异步 `image2image` 端点支持多图。
+
+---
+
+## 七、对比总结
+
+| 维度 | aitryon-plus | Qwen-Image-2.0 系列 | wan2.5-i2i-preview | 火山引擎换装 V2 |
+|------|-------------|---------------------|-------------------|---------------|
+| 上下装同时试穿 | ✅ 原生支持 | ✅ 多图输入（最多 3 张） | ✅ 多图融合 | ✅ 支持 |
+| API 风格 | REST 异步 | REST **同步** | REST 异步 | REST 同步+异步 |
+| 鉴权方式 | Bearer Token | Bearer Token | Bearer Token | AK/SK 签名 |
+| 免费额度 | 400 张 | 100 张 | 50 张 | ❓ 未公开 |
+| 单价 | ~¥0.5/张 | ¥0.2–0.5/张 | ¥0.2/张 | 未公开 |
+| 面部一致性 | ⭐⭐⭐ 最佳 | ⭐⭐ 依赖 prompt | ⭐⭐⭐ 优秀 | ⭐⭐⭐ 专用模型 |
+| Prompt 灵活性 | ❌ 纯图片 | ✅ 自然语言 | ✅ 自然语言 | ❌ 无 prompt |
+| 响应速度 | ~30–90s | **~15s** | ~45s | 未测 |
+| Base64 直传 | ❌ 需 OSS | ✅ 支持 | ✅ 支持 | ✅ 支持 |
+| 图片最小尺寸 | — | — | 384px | 300px |
+| 成熟度 | 高 | 中高 | 中高（Preview） | 高 |
+
+---
+
+## 八、OOTD 项目已集成模型
+
+通过环境变量 `TRYON_MODEL` 切换，集成在 `web/lib/tryon.ts`：
+
+| 模型 | 环境变量值 | 价格 | 调用模式 | 速度 |
+|------|-----------|------|---------|------|
+| Qwen-Image-2.0 | `qwen-image-2.0`（**默认**） | ¥0.2/张 | 同步 multimodal-generation | ~15s |
+| Qwen-Image-2.0-Pro | `qwen-image-2.0-pro` | ¥0.5/张 | 同步 multimodal-generation | ~20s |
+| 万相 2.5 图编辑 | `wan2.5-i2i-preview` | ¥0.2/张 | 异步 image2image + 轮询 | ~45s |
+
+模块自动根据模型名选择 API 路径（`ASYNC_MODELS` 集合），新增异步模型只需加入集合即可。
+
+---
+
+## 九、建议
+
+### 日常使用首选：`qwen-image-2.0`
 
 理由：
-1. 专用试穿模型，面部/身材/姿势保持一致性最好
-2. 请求结构与 OOTD 场景完美对齐（person + top + bottom 三字段）
-3. 有免费额度，可以低成本完成调试
-4. 文档最完善，有辅助 API（parsing / refiner）
+1. 同步接口，~15s 响应，用户体验最佳
+2. ¥0.2/张，性价比最高
+3. 已在生产稳定运行
 
-### 灵活方案：阿里云百炼 `qwen-image-2.0-pro`
+### 高质量场景：`qwen-image-2.0-pro`
 
 理由：
-1. 同步接口，无需轮询，响应更快
-2. Prompt 驱动，可灵活控制输出风格、姿势、场景
-3. 支持多图输出，用户可从多张候选中挑选
-4. 支持 Base64 直传，无需先上传 OSS
-5. 与 aitryon 共用同一 API Key，可根据场景灵活切换
+1. 质量更高，文字渲染和真实质感更强
+2. 同步接口，体验一致
+3. ¥0.5/张，适合重要场景
 
-适合场景：需要更多创意控制、风格化输出，或对响应速度有要求时使用。
+### 高保真替代：`wan2.5-i2i-preview`
+
+理由：
+1. 面部保持和衣服融合效果优秀
+2. 与 qwen-image-2.0 同价（¥0.2/张）
+3. 异步接口耗时较长（~45s），适合对质量更敏感的场景
 
 ### 备选：火山引擎 图片换装 V2
 
@@ -303,4 +419,5 @@ content 数组传入 3 个 image 对象（人像 + 上衣 + 下装）+ 1 个 tex
 
 ---
 
-*调研日期：2026-03-14（更新：新增 Qwen-Image-2.0-Pro 方案）*
+*调研日期：2026-03-14*
+*更新：2026-03-21 — 新增 wan2.5-i2i-preview 方案、qwen-image 系列兼容性测试、已集成模型清单*

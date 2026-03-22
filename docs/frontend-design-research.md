@@ -304,3 +304,56 @@ Apple 推广的**便当盒布局**，大小不一的模块自由组合：
 #### 设计参考
 
 竞品"搭搭"的天气日历横滑设计优势：一周天气一目了然，可左右滑动查看多天，信息密度高。相比原来的 3 个 Tab 切换，横滑日历覆盖范围更广（7 天 vs 3 天），交互更直观。
+
+---
+
+### 7.5 深色主题全站迁移（2026-03-22）
+
+> 用户反馈 "像小孩过家家，没有高级感"。首页已深色编辑风，内页仍粉色奶油风，割裂感强。
+
+#### Round 1: 统一视觉语言
+
+| 改动项 | 具体内容 |
+|--------|---------|
+| **全局色彩系统** (`globals.css`) | body bg `#FFF8F6` → `#0C0C0E`；前景 `#1D1D1F` → `#F5F5F7`；accent `#F27C88` → `#E8A0B0`；gradient `#FACDD0` → `#D4A0C8` |
+| **Glass 卡片** | 白色毛玻璃 `rgba(255,255,255,0.72)` → 深色毛玻璃 `rgba(255,255,255,0.04)` |
+| **设计 Token** | text-secondary `#6E6E73` → `rgba(255,255,255,0.5)`；text-muted `#AEAEB2` → `rgba(255,255,255,0.25)` |
+| **Input/Chip/Tab** | 全部暗底适配（bg `rgba(255,255,255,0.04)`，border `rgba(255,255,255,0.08)`） |
+| **PageShell** | 去掉粉色/紫色 orb，改极淡玫瑰金 radial-gradient |
+| **NavBar** | 去掉 isDark 条件分支，统一深色 `rgba(12,12,14,0.85)` |
+| **组件暗底适配** | EmptyState, ScoreBadge, RadarChart, PersonPickerModal, Skeleton, ToastProvider, ShareCardModal |
+| **页面标题排版** | 所有内页从 `text-3xl font-bold` 改为编辑风 (uppercase label + `text-2xl font-light`) |
+| **受影响页面** | wardrobe, tryon, recommendations, showcase, favorites, persons, me, wardrobe/add |
+
+#### Round 2: 精致细节
+
+| 改动项 | 具体内容 |
+|--------|---------|
+| **card-hover** | 加 `border: 1px solid rgba(255,255,255,0.06)` 使卡片边界更分明 |
+| **img-hover** | 全局图片 hover 加 `scale(1.05)` + 700ms ease transition |
+| **btn-glow** | CTA 按钮 hover 加 glow `box-shadow` |
+| **gradient-text** | 升级为三色渐变 `#E8A0B0 → #D4A0C8 → #B0A0D8` |
+| **模态框统一** | 所有模态框深色 bg `rgba(20,20,22,0.95)` + border |
+| **进度条/指示器** | 暗底适配 |
+
+#### Round 3: 微交互 + 最终打磨
+
+| 改动项 | 具体内容 |
+|--------|---------|
+| **stagger-item** | 网格子元素 staggered 入场动画 (60ms delay per item) |
+| **animate-fade-in-up** | 页面主内容区淡入上浮 |
+| **animate-breathe** | 空状态图标呼吸灯效果 |
+| **残留颜色清理** | 全站 `#F27C88`/`#FACDD0`/`#1D1D1F`/`#6E6E73`/`#AEAEB2` → 新 token |
+
+#### 色彩系统对照
+
+| Token | 旧值 (浅色) | 新值 (深色) |
+|-------|------------|------------|
+| bg-page | `#FFF8F6` | `#0C0C0E` |
+| text-primary | `#1D1D1F` | `#F5F5F7` |
+| text-secondary | `#6E6E73` | `rgba(255,255,255,0.5)` |
+| text-muted | `#AEAEB2` | `rgba(255,255,255,0.25)` |
+| accent | `#F27C88` | `#E8A0B0` |
+| accent-end | `#FACDD0` | `#D4A0C8` |
+| glass bg | `rgba(255,255,255,0.72)` | `rgba(255,255,255,0.04)` |
+| glass border | `rgba(242,124,136,0.1)` | `rgba(255,255,255,0.06)` |

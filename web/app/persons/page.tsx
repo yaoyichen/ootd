@@ -5,6 +5,8 @@ import Image from "next/image";
 import { useToast } from "../components/ToastProvider";
 import { SkeletonCard } from "../components/Skeleton";
 import { useModalKeyboard } from "../hooks/useModalKeyboard";
+import { PageShell } from "../components/PageShell";
+import { EmptyState } from "../components/EmptyState";
 
 interface PersonDescription {
   gender?: string;
@@ -60,7 +62,6 @@ export default function PersonsPage() {
     const res = await fetch("/api/persons");
     const data = await res.json();
     setPersons(data);
-    // Sync lightbox if open
     setViewPerson((prev) =>
       prev ? data.find((p: Person) => p.id === prev.id) || null : null
     );
@@ -71,7 +72,6 @@ export default function PersonsPage() {
     fetchPersons();
   }, [fetchPersons]);
 
-  // Close menu on outside click
   useEffect(() => {
     if (!menuOpen) return;
     const handler = () => setMenuOpen(null);
@@ -114,7 +114,6 @@ export default function PersonsPage() {
       setPreview(null);
       fetchPersons();
 
-      // Fire AI enhance in background, poll for updates
       if (person.id) {
         fetch(`/api/persons/${person.id}/enhance`, { method: "POST" })
           .then(() => fetchPersons())
@@ -150,31 +149,16 @@ export default function PersonsPage() {
   const displayImage = (p: Person) => p.enhancedImagePath || p.imagePath;
 
   return (
-    <div className="relative min-h-screen" style={{ background: "#FFF8F6" }}>
-      <div
-        className="pointer-events-none fixed rounded-full"
-        style={{
-          top: "-15%", right: "-8%", width: 700, height: 700,
-          background: "radial-gradient(circle, rgba(242,124,136,0.12), transparent 70%)",
-          filter: "blur(80px)",
-        }}
-      />
-
-      <main className="relative z-10 max-w-4xl mx-auto px-6 pt-8 pb-20">
+    <PageShell>
+      <main className="max-w-4xl mx-auto px-6 pt-8 pb-20 animate-fade-in-up">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold" style={{ color: "#1D1D1F" }}>人像管理</h1>
-            <p className="mt-1 text-sm" style={{ color: "#6E6E73" }}>
-              管理试穿用的全身照片，带星号的为默认人像
-            </p>
+            <p className="text-[10px] tracking-[0.25em] uppercase" style={{ color: "rgba(255,255,255,0.25)" }}>PORTRAITS</p>
+            <h1 className="text-2xl font-light text-primary">人像管理</h1>
           </div>
           <button
             onClick={() => inputRef.current?.click()}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white"
-            style={{
-              background: "linear-gradient(135deg, #F27C88, #FACDD0)",
-              boxShadow: "0 4px 16px rgba(242,124,136,0.25)",
-            }}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white btn-gradient touch-target"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
               <path d="M12 5v14m-7-7h14" />
@@ -200,8 +184,8 @@ export default function PersonsPage() {
             role="dialog"
             aria-modal="true"
           >
-            <div className="glass rounded-3xl p-6 w-full max-w-md mx-4 flex flex-col gap-5" style={{ background: "rgba(255,255,255,0.95)" }}>
-              <h2 className="text-lg font-bold" style={{ color: "#1D1D1F" }}>添加人像</h2>
+            <div className="glass rounded-3xl p-6 w-full max-w-md mx-4 flex flex-col gap-5" style={{ background: "rgba(20,20,22,0.95)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <h2 className="text-lg font-bold text-primary">添加人像</h2>
               <div className="rounded-2xl overflow-hidden" style={{ aspectRatio: "3/4" }}>
                 <Image src={preview} alt="Preview" width={400} height={533} className="w-full h-full object-cover" />
               </div>
@@ -210,15 +194,13 @@ export default function PersonsPage() {
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="为这张人像起个名字"
-                className="w-full px-4 py-3 rounded-xl text-sm outline-none"
-                style={{ background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.06)", color: "#1D1D1F" }}
+                className="input-base"
                 autoFocus
               />
               <div className="flex gap-3">
                 <button
                   onClick={() => { setShowAdd(false); setPreview(null); setNewName(""); }}
-                  className="flex-1 py-3 rounded-full text-sm font-semibold"
-                  style={{ background: "rgba(0,0,0,0.05)", color: "#6E6E73" }}
+                  className="flex-1 py-3 rounded-full text-sm font-semibold bg-subtle text-secondary"
                 >
                   取消
                 </button>
@@ -246,7 +228,6 @@ export default function PersonsPage() {
               className="relative max-w-lg w-full mx-4 flex flex-col items-center"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Close button */}
               <button
                 onClick={() => setViewPerson(null)}
                 className="absolute -top-10 right-0 w-8 h-8 rounded-full flex items-center justify-center"
@@ -257,7 +238,6 @@ export default function PersonsPage() {
                 </svg>
               </button>
 
-              {/* Image */}
               <div className="w-full rounded-2xl overflow-hidden" style={{ maxHeight: "70vh" }}>
                 <Image
                   src={displayImage(viewPerson)}
@@ -269,19 +249,18 @@ export default function PersonsPage() {
                 />
               </div>
 
-              {/* Info card */}
               <div className="w-full mt-3 p-4 rounded-2xl" style={{ background: "rgba(255,255,255,0.12)" }}>
                 <div className="flex items-center gap-2 mb-2">
                   <p className="text-base font-semibold text-white">{viewPerson.name}</p>
                   {viewPerson.isDefault && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                      style={{ background: "linear-gradient(135deg, #F27C88, #FACDD0)", color: "#fff" }}>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
+                      style={{ background: "linear-gradient(135deg, #E8A0B0, #D4A0C8)" }}>
                       默认
                     </span>
                   )}
                   {viewPerson.enhancedImagePath && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                      style={{ background: "rgba(52,199,89,0.8)", color: "#fff" }}>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
+                      style={{ background: "rgba(52,199,89,0.8)" }}>
                       已美化
                     </span>
                   )}
@@ -319,63 +298,55 @@ export default function PersonsPage() {
             ))}
           </div>
         ) : persons.length === 0 ? (
-          <div className="flex flex-col items-center gap-4 py-20">
-            <div
-              className="w-20 h-20 rounded-3xl flex items-center justify-center"
-              style={{ background: "rgba(242,124,136,0.06)" }}
-            >
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" strokeWidth="1" strokeLinecap="round" style={{ stroke: "#F27C88" }}>
+          <EmptyState
+            icon={
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" strokeWidth="1" strokeLinecap="round" style={{ stroke: "#E8A0B0" }}>
                 <circle cx="12" cy="8" r="4" />
                 <path d="M6 21v-2a6 6 0 0 1 12 0v2" />
               </svg>
-            </div>
-            <p className="text-sm" style={{ color: "#6E6E73" }}>
-              还没有人像，上传一张全身照开始吧
-            </p>
-          </div>
+            }
+            message="还没有人像，上传一张全身照开始吧"
+            actionLabel="上传人像"
+            onAction={() => inputRef.current?.click()}
+          />
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
-            {persons.map((p) => (
+            {persons.map((p, i) => (
               <div
                 key={p.id}
-                className="group glass rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-pointer"
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = "0 8px 32px rgba(242,124,136,0.1)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = "0 2px 20px rgba(0,0,0,0.04)";
-                }}
+                className="group glass rounded-2xl overflow-hidden card-hover cursor-pointer hover:scale-[1.02] transition-transform duration-300 img-hover stagger-item"
+                style={{ animationDelay: `${i * 60}ms` }}
                 onClick={() => setViewPerson(p)}
               >
                 <div className="relative" style={{ aspectRatio: "3/4" }}>
                   <Image src={displayImage(p)} alt={p.name} fill className="object-cover" />
                   {p.isDefault && (
                     <div
-                      className="absolute top-2 left-2 px-2 py-1 rounded-full text-[10px] font-semibold"
-                      style={{ background: "linear-gradient(135deg, #F27C88, #FACDD0)", color: "#fff" }}
+                      className="absolute top-2 left-2 px-2 py-1 rounded-full text-[10px] font-semibold text-white"
+                      style={{ background: "linear-gradient(135deg, #E8A0B0, #D4A0C8)" }}
                     >
                       默认
                     </div>
                   )}
                   {p.enhancedImagePath && (
                     <div
-                      className="absolute bottom-2 left-2 px-2 py-1 rounded-full text-[10px] font-semibold"
-                      style={{ background: "rgba(52,199,89,0.85)", color: "#fff" }}
+                      className="absolute bottom-2 left-2 px-2 py-1 rounded-full text-[10px] font-semibold text-white"
+                      style={{ background: "rgba(52,199,89,0.85)" }}
                     >
                       已美化
                     </div>
                   )}
-                  {/* Mobile menu button */}
+                  {/* Menu button */}
                   <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setMenuOpen(menuOpen === p.id ? null : p.id);
                       }}
-                      className="w-7 h-7 rounded-full flex items-center justify-center"
+                      className="w-10 h-10 rounded-full flex items-center justify-center touch-target"
                       style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
                         <circle cx="12" cy="5" r="2" />
                         <circle cx="12" cy="12" r="2" />
                         <circle cx="12" cy="19" r="2" />
@@ -383,12 +354,12 @@ export default function PersonsPage() {
                     </button>
                     {menuOpen === p.id && (
                       <div
-                        className="absolute top-9 right-0 rounded-xl overflow-hidden"
+                        className="absolute top-12 right-0 rounded-xl overflow-hidden"
                         style={{
-                          background: "rgba(255,255,255,0.95)",
+                          background: "rgba(20,20,22,0.95)",
                           backdropFilter: "blur(20px)",
-                          boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
-                          border: "1px solid rgba(0,0,0,0.06)",
+                          boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+                          border: "1px solid rgba(255,255,255,0.08)",
                           minWidth: 100,
                         }}
                       >
@@ -399,8 +370,7 @@ export default function PersonsPage() {
                               setMenuOpen(null);
                               handleSetDefault(p.id);
                             }}
-                            className="w-full text-left px-4 py-2.5 text-xs font-medium transition-colors hover:bg-black/[0.03]"
-                            style={{ color: "#F27C88" }}
+                            className="w-full text-left px-4 py-3 text-xs font-medium transition-colors hover:bg-white/[0.04] text-accent"
                           >
                             设为默认
                           </button>
@@ -411,7 +381,7 @@ export default function PersonsPage() {
                             setMenuOpen(null);
                             handleDelete(p.id);
                           }}
-                          className="w-full text-left px-4 py-2.5 text-xs font-medium transition-colors hover:bg-black/[0.03]"
+                          className="w-full text-left px-4 py-3 text-xs font-medium transition-colors hover:bg-white/[0.04]"
                           style={{ color: "#FF3B30" }}
                         >
                           删除
@@ -421,16 +391,25 @@ export default function PersonsPage() {
                   </div>
                 </div>
                 <div className="p-3">
-                  <p className="text-sm font-medium truncate" style={{ color: "#1D1D1F" }}>
+                  <p className="text-sm font-medium truncate text-primary">
                     {p.name}
                   </p>
                   {(() => {
                     const desc = parseDescription(p.description);
-                    return desc?.vibe ? (
-                      <p className="text-[11px] mt-0.5 truncate" style={{ color: "#6E6E73" }}>
-                        {desc.vibe}
-                      </p>
-                    ) : null;
+                    return (
+                      <div className="flex flex-col gap-0.5">
+                        {desc?.bodyType && (
+                          <p className="text-[11px] truncate text-secondary">
+                            {desc.bodyType}
+                          </p>
+                        )}
+                        {desc?.vibe && (
+                          <p className="text-[11px] truncate text-muted">
+                            {desc.vibe}
+                          </p>
+                        )}
+                      </div>
+                    );
                   })()}
                 </div>
               </div>
@@ -438,7 +417,7 @@ export default function PersonsPage() {
           </div>
         )}
       </main>
-    </div>
+    </PageShell>
   );
 }
 

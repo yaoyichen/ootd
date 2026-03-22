@@ -5,6 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useToast } from "../components/ToastProvider";
 import { SkeletonCard } from "../components/Skeleton";
+import { PageShell } from "../components/PageShell";
+import { EmptyState } from "../components/EmptyState";
 
 interface Item {
   id: string;
@@ -64,7 +66,6 @@ export default function WardrobePage() {
     fetchItems();
   }, [fetchItems]);
 
-  // Close menu on outside click
   useEffect(() => {
     if (!menuOpen) return;
     const handler = () => setMenuOpen(null);
@@ -84,32 +85,20 @@ export default function WardrobePage() {
   };
 
   return (
-    <div className="relative min-h-screen" style={{ background: "#FFF8F6" }}>
-      <div
-        className="pointer-events-none fixed rounded-full"
-        style={{
-          top: "-15%", right: "-8%", width: 700, height: 700,
-          background: "radial-gradient(circle, rgba(242,124,136,0.12), transparent 70%)",
-          filter: "blur(80px)",
-        }}
-      />
-
-      <main className="relative z-10 max-w-6xl mx-auto px-6 pt-8 pb-20">
+    <PageShell>
+      <main className="max-w-6xl mx-auto px-6 pt-8 pb-20 animate-fade-in-up">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold" style={{ color: "#1D1D1F" }}>我的衣橱</h1>
-            <p className="mt-1 text-sm" style={{ color: "#6E6E73" }}>
+            <p className="text-[10px] tracking-[0.25em] uppercase" style={{ color: "rgba(255,255,255,0.25)" }}>WARDROBE</p>
+            <h1 className="text-2xl font-light text-primary">我的衣橱</h1>
+            <p className="mt-1 text-sm text-secondary">
               {items.length} 件单品
             </p>
           </div>
           <Link
             href={activeCategory ? `/wardrobe/add?category=${activeCategory}` : "/wardrobe/add"}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white"
-            style={{
-              background: "linear-gradient(135deg, #F27C88, #FACDD0)",
-              boxShadow: "0 4px 16px rgba(242,124,136,0.25)",
-            }}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white btn-gradient touch-target"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
               <path d="M12 5v14m-7-7h14" />
@@ -124,14 +113,9 @@ export default function WardrobePage() {
             <button
               key={cat.key}
               onClick={() => setActiveCategory(cat.key)}
-              className="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors"
-              style={{
-                color: activeCategory === cat.key ? "#fff" : "#6E6E73",
-                background:
-                  activeCategory === cat.key
-                    ? "linear-gradient(135deg, #F27C88, #FACDD0)"
-                    : "rgba(0,0,0,0.04)",
-              }}
+              className={`tab-pill ${
+                activeCategory === cat.key ? "tab-pill-active" : "tab-pill-inactive"
+              }`}
             >
               {cat.label}
             </button>
@@ -140,46 +124,30 @@ export default function WardrobePage() {
 
         {/* Items grid */}
         {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <SkeletonCard key={i} />
             ))}
           </div>
         ) : items.length === 0 ? (
-          <div className="flex flex-col items-center gap-4 py-20">
-            <div
-              className="w-20 h-20 rounded-3xl flex items-center justify-center"
-              style={{ background: "rgba(242,124,136,0.06)" }}
-            >
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: "#F27C88" }}>
+          <EmptyState
+            icon={
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: "#E8A0B0" }}>
                 <rect x="3" y="2" width="18" height="20" rx="2" />
                 <line x1="12" y1="2" x2="12" y2="22" />
               </svg>
-            </div>
-            <p className="text-sm" style={{ color: "#6E6E73" }}>
-              衣橱还是空的，添加你的第一件单品吧
-            </p>
-            <Link
-              href={activeCategory ? `/wardrobe/add?category=${activeCategory}` : "/wardrobe/add"}
-              className="px-5 py-2 rounded-full text-sm font-semibold text-white"
-              style={{ background: "linear-gradient(135deg, #F27C88, #FACDD0)" }}
-            >
-              添加单品
-            </Link>
-          </div>
+            }
+            message="衣橱还是空的，添加你的第一件单品吧"
+            actionLabel="添加单品"
+            actionHref={activeCategory ? `/wardrobe/add?category=${activeCategory}` : "/wardrobe/add"}
+          />
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {items.map((item) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {items.map((item, i) => (
               <div
                 key={item.id}
-                className="group glass rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02]"
-                style={{ cursor: "pointer" }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = "0 8px 32px rgba(242,124,136,0.1)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = "0 2px 20px rgba(0,0,0,0.04)";
-                }}
+                className="group glass rounded-2xl overflow-hidden card-hover cursor-pointer hover:scale-[1.02] transition-transform duration-300 img-hover stagger-item"
+                style={{ animationDelay: `${i * 60}ms` }}
               >
                 <div className="relative" style={{ aspectRatio: "3/4" }}>
                   <Image
@@ -195,10 +163,10 @@ export default function WardrobePage() {
                         e.stopPropagation();
                         setMenuOpen(menuOpen === item.id ? null : item.id);
                       }}
-                      className="w-7 h-7 rounded-full flex items-center justify-center"
+                      className="w-10 h-10 rounded-full flex items-center justify-center touch-target"
                       style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
                         <circle cx="12" cy="5" r="2" />
                         <circle cx="12" cy="12" r="2" />
                         <circle cx="12" cy="19" r="2" />
@@ -206,12 +174,12 @@ export default function WardrobePage() {
                     </button>
                     {menuOpen === item.id && (
                       <div
-                        className="absolute top-9 right-0 rounded-xl overflow-hidden"
+                        className="absolute top-12 right-0 rounded-xl overflow-hidden"
                         style={{
-                          background: "rgba(255,255,255,0.95)",
+                          background: "rgba(20,20,22,0.95)",
                           backdropFilter: "blur(20px)",
-                          boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
-                          border: "1px solid rgba(0,0,0,0.06)",
+                          boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+                          border: "1px solid rgba(255,255,255,0.08)",
                           minWidth: 100,
                         }}
                       >
@@ -221,7 +189,7 @@ export default function WardrobePage() {
                             setMenuOpen(null);
                             handleDelete(item.id);
                           }}
-                          className="w-full text-left px-4 py-2.5 text-xs font-medium transition-colors hover:bg-black/[0.03]"
+                          className="w-full text-left px-4 py-3 text-xs font-medium transition-colors hover:bg-white/[0.04]"
                           style={{ color: "#FF3B30" }}
                         >
                           删除
@@ -231,18 +199,18 @@ export default function WardrobePage() {
                   </div>
                 </div>
                 <div className="p-3">
-                  <p className="text-sm font-medium truncate" style={{ color: "#1D1D1F" }}>
+                  <p className="text-sm font-medium truncate text-primary">
                     {item.name}
                   </p>
                   <div className="flex items-center gap-1.5 mt-1">
                     <span
-                      className="text-[10px] font-medium px-2 py-0.5 rounded-full"
-                      style={{ color: "#F27C88", background: "rgba(242,124,136,0.08)" }}
+                      className="text-[10px] font-medium px-2 py-0.5 rounded-full text-accent"
+                      style={{ background: "rgba(232,160,176,0.12)" }}
                     >
                       {CATEGORY_LABELS[item.category] || item.category}
                     </span>
                     {item.color && (
-                      <span className="text-[10px]" style={{ color: "#AEAEB2" }}>
+                      <span className="text-[10px] text-muted">
                         {item.color}
                       </span>
                     )}
@@ -253,6 +221,6 @@ export default function WardrobePage() {
           </div>
         )}
       </main>
-    </div>
+    </PageShell>
   );
 }

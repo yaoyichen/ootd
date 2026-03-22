@@ -20,18 +20,9 @@ export default function RegisterPage() {
     setError("");
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError("邮箱格式不正确");
-      return;
-    }
-    if (password.length < 6) {
-      setError("密码至少 6 位");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError("两次密码不一致");
-      return;
-    }
+    if (!emailRegex.test(email)) { setError("邮箱格式不正确"); return; }
+    if (password.length < 6) { setError("密码至少 6 位"); return; }
+    if (password !== confirmPassword) { setError("两次密码不一致"); return; }
 
     setLoading(true);
     try {
@@ -42,10 +33,7 @@ export default function RegisterPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "注册失败");
-        return;
-      }
+      if (!res.ok) { setError(data.error || "注册失败"); return; }
 
       await refresh();
       router.push("/");
@@ -56,81 +44,60 @@ export default function RegisterPage() {
     }
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: "#FFF8F6" }}>
-      <div className="fixed top-20 right-10 w-64 h-64 rounded-full opacity-30 pointer-events-none" style={{ background: "radial-gradient(circle, rgba(242,124,136,0.4), transparent 70%)" }} />
-      <div className="fixed bottom-32 left-10 w-48 h-48 rounded-full opacity-20 pointer-events-none" style={{ background: "radial-gradient(circle, rgba(168,120,200,0.4), transparent 70%)" }} />
+  const inputCls = "w-full px-4 py-3.5 rounded-xl text-sm outline-none bg-white/[0.04] border border-white/[0.08] text-white/90 placeholder:text-white/20 focus:border-white/20 transition-colors";
 
-      <div
-        className="w-full max-w-sm rounded-3xl p-8 shadow-lg"
-        style={{
-          background: "rgba(255,255,255,0.7)",
-          backdropFilter: "blur(24px) saturate(1.4)",
-          WebkitBackdropFilter: "blur(24px) saturate(1.4)",
-          border: "1px solid rgba(242,124,136,0.15)",
-        }}
-      >
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold" style={{ color: "#2D2D2D" }}>创建账号</h1>
-          <p className="text-sm mt-1" style={{ color: "#AEAEB2" }}>开始你的 OOTD 之旅</p>
+  return (
+    <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-6">
+      <div className="fixed inset-0" style={{
+        background: "radial-gradient(ellipse 60% 40% at 50% 30%, rgba(200,120,140,0.08), transparent)",
+      }} />
+
+      <div className="relative z-10 w-full max-w-sm">
+        <div className="text-center mb-12">
+          <h1
+            className="text-4xl font-extralight tracking-[0.15em] mb-3"
+            style={{
+              background: "linear-gradient(135deg, #E8A0B0, #D4A0C8)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
+            OOTD
+          </h1>
+          <p className="text-[11px] tracking-[0.2em] uppercase text-white/25 font-light">
+            AI Powered Styling
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="email"
-            placeholder="邮箱"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full px-4 py-3 rounded-xl text-sm outline-none"
-            style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(242,124,136,0.2)", color: "#2D2D2D" }}
-          />
-          <input
-            type="text"
-            placeholder="昵称（可选）"
-            value={nickname}
-            onChange={(e) => setNickname(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl text-sm outline-none"
-            style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(242,124,136,0.2)", color: "#2D2D2D" }}
-          />
-          <input
-            type="password"
-            placeholder="密码（至少 6 位）"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full px-4 py-3 rounded-xl text-sm outline-none"
-            style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(242,124,136,0.2)", color: "#2D2D2D" }}
-          />
-          <input
-            type="password"
-            placeholder="确认密码"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-            className="w-full px-4 py-3 rounded-xl text-sm outline-none"
-            style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(242,124,136,0.2)", color: "#2D2D2D" }}
-          />
+        <div className="rounded-2xl p-8 border border-white/[0.06] bg-white/[0.02]" style={{ backdropFilter: "blur(40px)" }}>
+          <div className="text-center mb-8">
+            <h2 className="text-lg font-light text-white/90">创建账号</h2>
+            <p className="text-xs text-white/30 mt-1 font-light">开始你的 OOTD 之旅</p>
+          </div>
 
-          {error && (
-            <p className="text-xs text-center" style={{ color: "#F27C88" }}>{error}</p>
-          )}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <input type="email" placeholder="邮箱" value={email} onChange={(e) => setEmail(e.target.value)} required className={inputCls} />
+            <input type="text" placeholder="昵称（可选）" value={nickname} onChange={(e) => setNickname(e.target.value)} className={inputCls} />
+            <input type="password" placeholder="密码（至少 6 位）" value={password} onChange={(e) => setPassword(e.target.value)} required className={inputCls} />
+            <input type="password" placeholder="确认密码" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className={inputCls} />
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn-gradient w-full py-3 rounded-full text-sm font-semibold"
-          >
-            {loading ? "注册中..." : "注册"}
-          </button>
-        </form>
+            {error && <p className="text-xs text-center text-red-400/80">{error}</p>}
 
-        <p className="text-center text-xs mt-6" style={{ color: "#AEAEB2" }}>
-          已有账号？{" "}
-          <Link href="/login" className="font-semibold" style={{ color: "#F27C88" }}>
-            去登录
-          </Link>
-        </p>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 rounded-full text-sm font-medium transition-all duration-300 hover:shadow-[0_0_30px_rgba(200,120,140,0.25)] disabled:opacity-40"
+              style={{ background: "linear-gradient(135deg, rgba(200,120,140,0.9), rgba(180,140,200,0.9))" }}
+            >
+              {loading ? "注册中..." : "注册"}
+            </button>
+          </form>
+
+          <p className="text-center text-xs mt-8 text-white/25 font-light">
+            已有账号？{" "}
+            <Link href="/login" className="text-white/50 hover:text-white/70 transition-colors">去登录</Link>
+          </p>
+        </div>
       </div>
     </div>
   );

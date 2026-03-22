@@ -75,8 +75,9 @@ See `web/.env.example`. Required keys:
 
 ## Styling Conventions
 
-- Design language: warm pink (#F27C88) + purple tones + cream background (#FFF8F6)
-- Glass-morphism cards with backdrop blur
+- Design language: dark editorial theme (#0C0C0E bg) + rose-gold accent (#E8A0B0) + pink-purple gradient (#E8A0B0 → #D4A0C8)
+- Glass-morphism cards: dark glass `rgba(255,255,255,0.04)` with subtle borders `rgba(255,255,255,0.06)`
+- Text hierarchy: `text-primary` (#F5F5F7), `text-secondary` (rgba white 0.5), `text-muted` (rgba white 0.25)
 - Font: Plus Jakarta Sans (loaded locally from `public/fonts/`)
 - Custom styles in `app/globals.css` alongside Tailwind utilities
 - TypeScript path alias: `@/*` maps to `web/` root

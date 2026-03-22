@@ -3,7 +3,7 @@ export function SkeletonBlock({ className = "", style }: { className?: string; s
     <div
       className={`rounded-2xl ${className}`}
       style={{
-        background: "linear-gradient(90deg, rgba(0,0,0,0.04) 25%, rgba(0,0,0,0.08) 50%, rgba(0,0,0,0.04) 75%)",
+        background: "linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 75%)",
         backgroundSize: "200% 100%",
         animation: "skeletonShimmer 1.5s ease-in-out infinite",
         ...style,

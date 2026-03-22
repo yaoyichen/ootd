@@ -36,7 +36,7 @@ let nextId = 0;
 const TYPE_COLORS: Record<ToastType, string> = {
   success: "#34C759",
   error: "#FF3B30",
-  info: "#F27C88",
+  info: "#E8A0B0",
 };
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -80,11 +80,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             key={t.id}
             className="pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl min-w-[240px] max-w-[360px]"
             style={{
-              background: "rgba(255,255,255,0.92)",
+              background: "rgba(20,20,22,0.92)",
               backdropFilter: "blur(20px) saturate(1.4)",
               WebkitBackdropFilter: "blur(20px) saturate(1.4)",
-              boxShadow: "0 4px 24px rgba(0,0,0,0.1)",
-              border: "1px solid rgba(0,0,0,0.06)",
+              boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
+              border: "1px solid rgba(255,255,255,0.06)",
               animation: "toastSlideUp 0.3s ease-out",
             }}
           >
@@ -92,15 +92,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               className="w-1 self-stretch rounded-full flex-shrink-0"
               style={{ background: TYPE_COLORS[t.type] }}
             />
-            <p className="flex-1 text-sm font-medium" style={{ color: "#1D1D1F" }}>
+            <p className="flex-1 text-sm font-medium" style={{ color: "#F5F5F7" }}>
               {t.message}
             </p>
             <button
               onClick={() => removeToast(t.id)}
               className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: "rgba(0,0,0,0.05)" }}
+              style={{ background: "rgba(255,255,255,0.06)" }}
             >
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" strokeWidth="2.5" strokeLinecap="round">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2.5" strokeLinecap="round">
                 <path d="M18 6 6 18M6 6l12 12" />
               </svg>
             </button>
@@ -112,25 +112,26 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {confirmState && (
         <div
           className="fixed inset-0 z-[110] flex items-center justify-center"
-          style={{ background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }}
+          style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
         >
           <div
             className="mx-6 max-w-sm w-full rounded-3xl p-6 flex flex-col gap-4"
             style={{
-              background: "rgba(255,255,255,0.95)",
+              background: "rgba(20,20,22,0.95)",
               backdropFilter: "blur(20px)",
-              boxShadow: "0 8px 40px rgba(0,0,0,0.12)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              boxShadow: "0 8px 40px rgba(0,0,0,0.4)",
               animation: "toastSlideUp 0.25s ease-out",
             }}
           >
-            <p className="text-base font-semibold text-center" style={{ color: "#1D1D1F" }}>
+            <p className="text-base font-semibold text-center" style={{ color: "#F5F5F7" }}>
               {confirmState.message}
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmState(null)}
                 className="flex-1 py-3 rounded-full text-sm font-semibold"
-                style={{ background: "rgba(0,0,0,0.05)", color: "#6E6E73" }}
+                style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)" }}
               >
                 取消
               </button>
@@ -140,7 +141,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   setConfirmState(null);
                 }}
                 className="flex-1 py-3 rounded-full text-sm font-semibold text-white"
-                style={{ background: "linear-gradient(135deg, #F27C88, #FACDD0)" }}
+                style={{ background: "linear-gradient(135deg, rgba(200,120,140,0.9), rgba(180,140,200,0.9))" }}
               >
                 确定
               </button>

@@ -7,6 +7,9 @@ import { SkeletonWeatherBar, SkeletonOutfitCard } from "../components/Skeleton";
 import { useModalKeyboard } from "../hooks/useModalKeyboard";
 import ShareCardModal from "../components/ShareCardModal";
 import { useToast } from "../components/ToastProvider";
+import { RadarChart } from "../components/RadarChart";
+import { PersonPickerModal } from "../components/PersonPickerModal";
+import { PageShell } from "../components/PageShell";
 
 interface CityOption {
   id: string;
@@ -71,9 +74,9 @@ function getWeatherIcon(text: string): string {
 }
 
 const OCCASIONS = [
-  { id: "date", label: "约会甜蜜", icon: "❤️", gradient: "linear-gradient(135deg, #F27C88, #C084FC)" },
+  { id: "date", label: "约会甜蜜", icon: "❤️", gradient: "linear-gradient(135deg, #E8A0B0, #C084FC)" },
   { id: "work", label: "职场通勤", icon: "💼", gradient: "linear-gradient(135deg, #8E8E93, #5B9BD5)" },
-  { id: "friends", label: "闺蜜聚会", icon: "✨", gradient: "linear-gradient(135deg, #FF9F43, #F27C88)" },
+  { id: "friends", label: "闺蜜聚会", icon: "✨", gradient: "linear-gradient(135deg, #FF9F43, #E8A0B0)" },
   { id: "casual", label: "周末逛街", icon: "🛍️", gradient: "linear-gradient(135deg, #7BC67E, #5BB8C4)" },
   { id: "sport", label: "健身运动", icon: "🏃", gradient: "linear-gradient(135deg, #5B9BD5, #C084FC)" },
   { id: "formal", label: "正式场合", icon: "👔", gradient: "linear-gradient(135deg, #636366, #48484A)" },
@@ -134,71 +137,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   OUTERWEAR: "外套",
   ONEPIECE: "连体",
 };
-
-function PersonPicker({
-  persons,
-  selected,
-  onSelect,
-  onClose,
-}: {
-  persons: PersonData[];
-  selected: string | null;
-  onSelect: (id: string) => void;
-  onClose: () => void;
-}) {
-  useModalKeyboard({ isOpen: true, onClose });
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm" role="dialog" aria-modal="true">
-      <div
-        className="w-full max-w-lg mx-4 mb-4 sm:mb-0 rounded-3xl p-6 flex flex-col gap-4 max-h-[80vh]"
-        style={{ background: "rgba(255,255,255,0.96)", backdropFilter: "blur(20px)" }}
-      >
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold" style={{ color: "#1D1D1F" }}>选择人像</h3>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center"
-            style={{ background: "rgba(0,0,0,0.05)" }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" strokeWidth="2" strokeLinecap="round">
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        {persons.length === 0 ? (
-          <p className="text-sm py-10 text-center" style={{ color: "#AEAEB2" }}>
-            暂无人像，请先到人像管理上传
-          </p>
-        ) : (
-          <div className="grid grid-cols-3 gap-3 overflow-y-auto">
-            {persons.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => { onSelect(p.id); onClose(); }}
-                className="rounded-2xl overflow-hidden transition-all duration-200"
-                style={{
-                  border: selected === p.id ? "2px solid #F27C88" : "2px solid transparent",
-                  boxShadow: selected === p.id ? "0 0 0 2px rgba(242,124,136,0.2)" : "none",
-                }}
-              >
-                <div className="relative" style={{ aspectRatio: "3/4" }}>
-                  <Image src={p.imagePath} alt={p.name} fill className="object-cover" />
-                </div>
-                <div className="p-2">
-                  <p className="text-xs font-medium truncate" style={{ color: "#1D1D1F" }}>{p.name}</p>
-                  {p.isDefault && (
-                    <span className="text-[10px]" style={{ color: "#F27C88" }}>默认</span>
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 function WeatherCard({
   weather,
@@ -268,7 +206,7 @@ function WeatherCard({
   return (
     <div
       className="glass rounded-2xl p-4 mb-6 transition-all duration-300"
-      style={{ boxShadow: "0 1px 12px rgba(0,0,0,0.03)" }}
+      style={{ boxShadow: "0 1px 12px rgba(0,0,0,0.1)" }}
     >
       {/* City selector */}
       <div className="flex items-center gap-2 mb-3" ref={dropdownRef}>
@@ -276,9 +214,9 @@ function WeatherCard({
           onClick={() => setOpen(!open)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
           style={{
-            background: "rgba(242,124,136,0.08)",
-            color: "#F27C88",
-            border: "1px solid rgba(242,124,136,0.15)",
+            background: "rgba(232,160,176,0.08)",
+            color: "#E8A0B0",
+            border: "1px solid rgba(232,160,176,0.15)",
           }}
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -291,7 +229,7 @@ function WeatherCard({
           </svg>
         </button>
         {targetDay === 0 && weather && (
-          <span className="text-[11px]" style={{ color: "#AEAEB2" }}>
+          <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.25)" }}>
             实时 {weather.temp}
           </span>
         )}
@@ -299,19 +237,19 @@ function WeatherCard({
           <div
             className="absolute top-full left-4 mt-1.5 z-30 rounded-xl overflow-hidden"
             style={{
-              background: "rgba(255,255,255,0.98)",
+              background: "rgba(20,20,22,0.95)",
               backdropFilter: "blur(20px)",
-              boxShadow: "0 4px 24px rgba(0,0,0,0.1)",
-              border: "1px solid rgba(0,0,0,0.06)",
+              boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
+              border: "1px solid rgba(255,255,255,0.06)",
               minWidth: 180,
             }}
           >
             <div className="px-3 pt-2.5 pb-1.5">
               <div
                 className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg"
-                style={{ background: "rgba(0,0,0,0.04)" }}
+                style={{ background: "rgba(255,255,255,0.04)" }}
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#AEAEB2" strokeWidth="2" strokeLinecap="round">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="2" strokeLinecap="round">
                   <circle cx="11" cy="11" r="8" />
                   <path d="M21 21l-4.35-4.35" />
                 </svg>
@@ -321,16 +259,16 @@ function WeatherCard({
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="搜索城市..."
-                  className="flex-1 bg-transparent text-xs outline-none placeholder:text-[#AEAEB2]"
-                  style={{ color: "#1D1D1F" }}
+                  className="flex-1 bg-transparent text-xs outline-none placeholder:text-white/25"
+                  style={{ color: "rgba(255,255,255,0.85)" }}
                 />
                 {query && (
                   <button
                     onClick={() => { setQuery(""); inputRef.current?.focus(); }}
                     className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ background: "rgba(0,0,0,0.1)" }}
+                    style={{ background: "rgba(255,255,255,0.1)" }}
                   >
-                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#6E6E73" strokeWidth="3" strokeLinecap="round">
+                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="3" strokeLinecap="round">
                       <path d="M18 6 6 18M6 6l12 12" />
                     </svg>
                   </button>
@@ -339,7 +277,7 @@ function WeatherCard({
             </div>
             <div className="max-h-48 overflow-y-auto py-1">
               {filteredCities.length === 0 ? (
-                <div className="px-3.5 py-3 text-xs text-center" style={{ color: "#AEAEB2" }}>
+                <div className="px-3.5 py-3 text-xs text-center" style={{ color: "rgba(255,255,255,0.25)" }}>
                   未找到匹配城市
                 </div>
               ) : (
@@ -351,14 +289,14 @@ function WeatherCard({
                       setOpen(false);
                       setQuery("");
                     }}
-                    className="w-full text-left px-3.5 py-2 text-xs transition-colors hover:bg-black/[0.03]"
+                    className="w-full text-left px-3.5 py-2 text-xs transition-colors hover:bg-white/[0.04]"
                     style={{
-                      color: c.id === cityId ? "#F27C88" : "#1D1D1F",
+                      color: c.id === cityId ? "#E8A0B0" : "rgba(255,255,255,0.7)",
                       fontWeight: c.id === cityId ? 600 : 400,
                     }}
                   >
                     {c.name}
-                    <span className="ml-1" style={{ color: "#AEAEB2", fontSize: 10 }}>{c.adm1}</span>
+                    <span className="ml-1" style={{ color: "rgba(255,255,255,0.25)", fontSize: 10 }}>{c.adm1}</span>
                   </button>
                 ))
               )}
@@ -373,12 +311,12 @@ function WeatherCard({
           <div
             className="w-4 h-4 rounded-full"
             style={{
-              border: "2px solid rgba(242,124,136,0.15)",
-              borderTopColor: "#F27C88",
+              border: "2px solid rgba(232,160,176,0.15)",
+              borderTopColor: "#E8A0B0",
               animation: "spin 0.8s linear infinite",
             }}
           />
-          <span className="text-xs" style={{ color: "#AEAEB2" }}>获取天气中...</span>
+          <span className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>获取天气中...</span>
         </div>
       ) : forecasts.length > 0 ? (
         <>
@@ -400,21 +338,21 @@ function WeatherCard({
                   style={{
                     minWidth: 64,
                     background: active
-                      ? "linear-gradient(135deg, #F27C88, #F9A8B0)"
-                      : "rgba(0,0,0,0.03)",
-                    boxShadow: active ? "0 2px 12px rgba(242,124,136,0.3)" : "none",
-                    border: active ? "none" : "1px solid rgba(0,0,0,0.04)",
+                      ? "linear-gradient(135deg, #E8A0B0, #F9A8B0)"
+                      : "rgba(255,255,255,0.03)",
+                    boxShadow: active ? "0 2px 12px rgba(232,160,176,0.3)" : "none",
+                    border: active ? "none" : "1px solid rgba(255,255,255,0.04)",
                   }}
                 >
                   <span
                     className="text-[11px] font-semibold leading-tight"
-                    style={{ color: active ? "#fff" : "#6E6E73" }}
+                    style={{ color: active ? "#fff" : "rgba(255,255,255,0.4)" }}
                   >
                     {f.weekday}
                   </span>
                   <span
                     className="text-[10px] leading-tight mt-0.5"
-                    style={{ color: active ? "rgba(255,255,255,0.8)" : "#AEAEB2" }}
+                    style={{ color: active ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.25)" }}
                   >
                     {f.dateShort}
                   </span>
@@ -423,7 +361,7 @@ function WeatherCard({
                   </span>
                   <span
                     className="text-[11px] font-medium leading-tight"
-                    style={{ color: active ? "#fff" : "#1D1D1F" }}
+                    style={{ color: active ? "#fff" : "rgba(255,255,255,0.85)" }}
                   >
                     {f.tempMin}~{f.tempMax}°
                   </span>
@@ -431,8 +369,8 @@ function WeatherCard({
                     <span
                       className="text-[9px] mt-1 px-1.5 py-0.5 rounded-full font-medium"
                       style={{
-                        background: active ? "rgba(255,255,255,0.25)" : "rgba(242,124,136,0.08)",
-                        color: active ? "#fff" : "#F27C88",
+                        background: active ? "rgba(255,255,255,0.25)" : "rgba(232,160,176,0.08)",
+                        color: active ? "#fff" : "#E8A0B0",
                       }}
                     >
                       {f.dayLabel}
@@ -445,19 +383,19 @@ function WeatherCard({
 
           {/* Selected day detail */}
           {forecast && (
-            <div className="flex items-center gap-3 mt-3 pt-3" style={{ borderTop: "1px solid rgba(0,0,0,0.04)" }}>
+            <div className="flex items-center gap-3 mt-3 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
               <span className="text-3xl leading-none">{getWeatherIcon(forecast.weatherDay)}</span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xl font-bold tracking-tight" style={{ color: "#1D1D1F" }}>
+                  <span className="text-xl font-bold tracking-tight text-primary">
                     {forecast.tempRange}
                   </span>
-                  <span className="text-xs font-medium" style={{ color: "#F27C88" }}>
+                  <span className="text-xs font-medium" style={{ color: "#E8A0B0" }}>
                     {forecast.dayLabel}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-xs" style={{ color: "#6E6E73" }}>
+                  <span className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
                     {forecast.weatherDay}{forecast.weatherDay !== forecast.weatherNight ? ` → ${forecast.weatherNight}` : ""}
                   </span>
                 </div>
@@ -469,15 +407,15 @@ function WeatherCard({
         <div className="flex items-center gap-3">
           <span className="text-xl leading-none">{getWeatherIcon(weather.weather)}</span>
           <div>
-            <span className="text-lg font-bold" style={{ color: "#1D1D1F" }}>{weather.temp}</span>
-            <p className="text-[10px]" style={{ color: "#6E6E73" }}>
+            <span className="text-lg font-bold text-primary">{weather.temp}</span>
+            <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>
               {weather.weather} · 体感 {weather.feelsLike}
             </p>
           </div>
         </div>
       ) : (
         <div className="py-2">
-          <span className="text-xs" style={{ color: "#AEAEB2" }}>天气数据暂不可用</span>
+          <span className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>天气数据暂不可用</span>
         </div>
       )}
 
@@ -485,167 +423,14 @@ function WeatherCard({
       {clothingAdvice && (
         <div
           className="mt-3 px-3 py-2 rounded-xl text-xs leading-relaxed"
-          style={{ background: "rgba(242,124,136,0.04)", color: "#6E6E73" }}
+          style={{ background: "rgba(232,160,176,0.04)", color: "rgba(255,255,255,0.4)" }}
         >
-          <span style={{ color: "#F27C88" }}>
+          <span style={{ color: "#E8A0B0" }}>
             {forecast?.dayLabel === "今天" ? "👔 今日穿衣建议：" : `👔 ${forecast?.dayLabel}穿衣建议：`}
           </span>
           {clothingAdvice}
         </div>
       )}
-    </div>
-  );
-}
-
-const DIM_LABELS: { key: keyof ScoreDims; label: string }[] = [
-  { key: "colorHarmony", label: "色彩" },
-  { key: "styleCohesion", label: "风格" },
-  { key: "trendiness", label: "时尚" },
-  { key: "practicality", label: "实穿" },
-  { key: "creativity", label: "创意" },
-];
-
-function RadarChart({
-  dims,
-  score,
-  size = 140,
-}: {
-  dims: ScoreDims;
-  score: number;
-  size?: number;
-}) {
-  const [hovered, setHovered] = useState<number | null>(null);
-
-  const cx = size / 2;
-  const cy = size / 2;
-  const maxR = size * 0.34;
-  const labelR = size * 0.46;
-  const levels = [20, 40, 60, 80, 100];
-  const n = DIM_LABELS.length;
-
-  const angleOf = (i: number) => (Math.PI * 2 * i) / n - Math.PI / 2;
-
-  const pointAt = (i: number, value: number) => {
-    const a = angleOf(i);
-    const r = (value / 100) * maxR;
-    return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
-  };
-
-  const gridPaths = levels.map((lv) => {
-    const pts = Array.from({ length: n }, (_, i) => pointAt(i, lv));
-    return pts.map((p) => `${p[0]},${p[1]}`).join(" ");
-  });
-
-  const dataPts = DIM_LABELS.map((d, i) => pointAt(i, dims[d.key]));
-  const dataPath = dataPts.map((p) => `${p[0]},${p[1]}`).join(" ");
-
-  const displayScore = hovered !== null ? dims[DIM_LABELS[hovered].key] : score;
-  const scoreColor =
-    displayScore >= 80 ? "#34C759" : displayScore >= 60 ? "#F27C88" : "#FF3B30";
-
-  return (
-    <div
-      className="relative inline-flex items-center justify-center"
-      style={{ width: size, height: size }}
-      onMouseLeave={() => setHovered(null)}
-    >
-      <svg width={size} height={size}>
-        {gridPaths.map((pts, i) => (
-          <polygon
-            key={i}
-            points={pts}
-            fill="none"
-            stroke="rgba(0,0,0,0.06)"
-            strokeWidth={0.5}
-          />
-        ))}
-        {Array.from({ length: n }, (_, i) => {
-          const [ex, ey] = pointAt(i, 100);
-          const active = hovered === i;
-          return (
-            <line
-              key={i}
-              x1={cx}
-              y1={cy}
-              x2={ex}
-              y2={ey}
-              stroke={active ? "#F27C88" : "rgba(0,0,0,0.04)"}
-              strokeWidth={active ? 1.5 : 0.5}
-              style={{ transition: "stroke 0.2s, stroke-width 0.2s" }}
-            />
-          );
-        })}
-        <polygon
-          points={dataPath}
-          fill="rgba(242,124,136,0.12)"
-          stroke="#F27C88"
-          strokeWidth={1.5}
-          strokeLinejoin="round"
-        />
-        {dataPts.map((p, i) => {
-          const active = hovered === i;
-          return (
-            <circle
-              key={i}
-              cx={p[0]}
-              cy={p[1]}
-              r={active ? 5 : 2.5}
-              fill={active ? "#F27C88" : "#F27C88"}
-              stroke={active ? "white" : "none"}
-              strokeWidth={active ? 2 : 0}
-              style={{ transition: "r 0.2s" }}
-            />
-          );
-        })}
-        {DIM_LABELS.map((d, i) => {
-          const a = angleOf(i);
-          const lx = cx + labelR * Math.cos(a);
-          const ly = cy + labelR * Math.sin(a);
-          const active = hovered === i;
-          const dimVal = dims[d.key];
-          const label = active ? `${d.label} ${dimVal}` : d.label;
-          return (
-            <text
-              key={d.key}
-              x={lx}
-              y={ly}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fontSize={active ? 11 : 10}
-              fontWeight={active ? 700 : 500}
-              fill={active ? "#F27C88" : "#6E6E73"}
-              style={{ transition: "fill 0.2s, font-size 0.2s", cursor: "default" }}
-            >
-              {label}
-            </text>
-          );
-        })}
-        {DIM_LABELS.map((_, i) => {
-          const a = angleOf(i);
-          const hx = cx + labelR * Math.cos(a);
-          const hy = cy + labelR * Math.sin(a);
-          return (
-            <circle
-              key={`hit-${i}`}
-              cx={hx}
-              cy={hy}
-              r={14}
-              fill="transparent"
-              onMouseEnter={() => setHovered(i)}
-            />
-          );
-        })}
-      </svg>
-      <span
-        className="absolute font-bold pointer-events-none"
-        style={{
-          color: scoreColor,
-          fontSize: size * 0.16,
-          transition: "color 0.2s",
-        }}
-      >
-        {displayScore}
-      </span>
     </div>
   );
 }
@@ -665,10 +450,11 @@ function RecommendationCard({
   published: boolean;
   onPublish: (outfitId: string) => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
   return (
     <div
       className="glass rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.01]"
-      style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.04)" }}
+      style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.1)" }}
     >
       <div className="relative" style={{ aspectRatio: "3/4" }}>
         <Image
@@ -684,8 +470,8 @@ function RecommendationCard({
         <div
           className="absolute top-3 left-3 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
           style={{
-            background: "linear-gradient(135deg, #F27C88, #FACDD0)",
-            boxShadow: "0 2px 8px rgba(242,124,136,0.3)",
+            background: "linear-gradient(135deg, #E8A0B0, #D4A0C8)",
+            boxShadow: "0 2px 8px rgba(232,160,176,0.3)",
           }}
         >
           {rec.rank}
@@ -789,34 +575,48 @@ function RecommendationCard({
 
       {/* Info section */}
       <div className="p-4 flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          {rec.topItem && (
-            <span
-              className="text-[10px] font-medium px-2 py-0.5 rounded-full"
-              style={{ color: "#F27C88", background: "rgba(242,124,136,0.08)" }}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            {rec.topItem && (
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full text-accent" style={{ background: "rgba(232,160,176,0.12)" }}>
+                {rec.topItem.name}
+              </span>
+            )}
+            <span className="text-[10px] text-muted">+</span>
+            {rec.bottomItem && (
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full text-accent" style={{ background: "rgba(232,160,176,0.12)" }}>
+                {rec.bottomItem.name}
+              </span>
+            )}
+          </div>
+          {rec.score !== null && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="flex items-center gap-1 flex-shrink-0"
             >
-              {rec.topItem.name}
-            </span>
-          )}
-          <span className="text-[10px]" style={{ color: "#AEAEB2" }}>+</span>
-          {rec.bottomItem && (
-            <span
-              className="text-[10px] font-medium px-2 py-0.5 rounded-full"
-              style={{ color: "#F27C88", background: "rgba(242,124,136,0.08)" }}
-            >
-              {rec.bottomItem.name}
-            </span>
+              <span
+                className="text-sm font-bold"
+                style={{ color: rec.score >= 80 ? "#34C759" : rec.score >= 60 ? "#E8A0B0" : "#FF3B30" }}
+              >
+                {rec.score}
+              </span>
+              <svg
+                width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="2" strokeLinecap="round"
+                className={`transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
           )}
         </div>
-        {rec.score !== null && rec.scoreDims && (
-          <div className="flex justify-center py-1">
+        {expanded && rec.score !== null && rec.scoreDims && (
+          <div className="flex justify-center py-1 animate-fade-in-up">
             <RadarChart dims={rec.scoreDims} score={rec.score} size={150} />
           </div>
         )}
-        {rec.evaluation && (
-          <p
-            className="text-xs leading-relaxed"
-            style={{ color: "#1D1D1F" }}
+        {expanded && rec.evaluation && (
+          <div
+            className="eval-card text-xs leading-relaxed text-primary animate-fade-in-up"
             dangerouslySetInnerHTML={{ __html: rec.evaluation }}
           />
         )}
@@ -1168,22 +968,10 @@ export default function RecommendationsPage() {
             : 0;
 
   return (
-    <div className="relative min-h-screen" style={{ background: "#FFF8F6" }}>
-      <div
-        className="pointer-events-none fixed rounded-full"
-        style={{
-          top: "-15%",
-          right: "-8%",
-          width: 700,
-          height: 700,
-          background:
-            "radial-gradient(circle, rgba(242,124,136,0.12), transparent 70%)",
-          filter: "blur(80px)",
-        }}
-      />
+    <PageShell>
 
       {showPersonPicker && (
-        <PersonPicker
+        <PersonPickerModal
           persons={persons}
           selected={selectedPerson}
           onSelect={handlePersonChange}
@@ -1195,22 +983,12 @@ export default function RecommendationsPage() {
       <main className="relative z-10 max-w-5xl mx-auto px-6 pt-8 pb-20">
         {/* Header */}
         <div className="text-center mb-6">
-          <h1
-            className="text-3xl sm:text-4xl font-bold tracking-tight"
-            style={{ color: "#1D1D1F" }}
-          >
-            <span
-              style={{
-                background: "linear-gradient(135deg, #F27C88, #FACDD0)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              {targetDayLabel}
-            </span>
+          <p className="text-[10px] tracking-[0.25em] uppercase" style={{ color: "rgba(255,255,255,0.25)" }}>RECOMMENDATIONS</p>
+          <h1 className="text-2xl font-light text-primary">
+            <span className="gradient-text">{targetDayLabel}</span>
             {" "}穿搭推荐
           </h1>
-          <p className="mt-2 text-sm" style={{ color: "#6E6E73" }}>
+          <p className="mt-2 text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
             {targetDay === 0
               ? "AI 从你的衣橱中智能搭配，精选最佳方案"
               : `根据${targetDayLabel}天气预报，提前为你准备穿搭`}
@@ -1236,9 +1014,9 @@ export default function RecommendationsPage() {
               disabled={isProcessing}
               className="flex items-center gap-2.5 px-4 py-2 rounded-full transition-all"
               style={{
-                background: "rgba(255,255,255,0.7)",
-                border: "1px solid rgba(0,0,0,0.08)",
-                boxShadow: "0 1px 8px rgba(0,0,0,0.04)",
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                boxShadow: "none",
                 cursor: isProcessing ? "not-allowed" : "pointer",
                 opacity: isProcessing ? 0.6 : 1,
               }}
@@ -1254,10 +1032,10 @@ export default function RecommendationsPage() {
                   />
                 </div>
               )}
-              <span className="text-xs font-medium" style={{ color: "#1D1D1F" }}>
+              <span className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>
                 {currentPerson?.name || "选择人像"}
               </span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#AEAEB2" strokeWidth="2" strokeLinecap="round">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="2" strokeLinecap="round">
                 <path d="M6 9l6 6 6-6" />
               </svg>
             </button>
@@ -1279,11 +1057,11 @@ export default function RecommendationsPage() {
                     key={o.id}
                     onClick={() => !isProcessing && setSelectedOccasion(selected ? null : o.id)}
                     disabled={isProcessing}
-                    className="occasion-scroll flex-shrink-0 rounded-2xl px-4 py-2.5 flex items-center gap-1.5 transition-all duration-200"
+                    className="occasion-scroll flex-shrink-0 rounded-2xl px-4 py-3 flex items-center gap-1.5 transition-all duration-200 touch-target"
                     style={{
-                      background: selected ? o.gradient : "rgba(0,0,0,0.03)",
-                      color: selected ? "#fff" : "#1D1D1F",
-                      boxShadow: selected ? "0 4px 14px rgba(242,124,136,0.3)" : "none",
+                      background: selected ? o.gradient : "rgba(255,255,255,0.03)",
+                      color: selected ? "#fff" : "rgba(255,255,255,0.7)",
+                      boxShadow: selected ? "0 4px 14px rgba(232,160,176,0.3)" : "none",
                       cursor: isProcessing ? "not-allowed" : "pointer",
                       opacity: isProcessing ? 0.6 : 1,
                       fontWeight: selected ? 600 : 400,
@@ -1317,8 +1095,8 @@ export default function RecommendationsPage() {
                       x2="100%"
                       y2="100%"
                     >
-                      <stop offset="0%" stopColor="#F27C88" />
-                      <stop offset="100%" stopColor="#FACDD0" />
+                      <stop offset="0%" stopColor="#E8A0B0" />
+                      <stop offset="100%" stopColor="#D4A0C8" />
                     </linearGradient>
                   </defs>
                   <circle
@@ -1326,7 +1104,7 @@ export default function RecommendationsPage() {
                     cy="28"
                     r="24"
                     fill="none"
-                    stroke="rgba(242,124,136,0.1)"
+                    stroke="rgba(232,160,176,0.1)"
                     strokeWidth="3"
                   />
                   <circle
@@ -1343,8 +1121,7 @@ export default function RecommendationsPage() {
               </div>
 
               <p
-                className="text-sm font-medium"
-                style={{ color: "#1D1D1F" }}
+                className="text-sm font-medium text-primary"
               >
                 {progressMsg}
               </p>
@@ -1353,14 +1130,14 @@ export default function RecommendationsPage() {
               <div className="w-full max-w-sm">
                 <div
                   className="h-1.5 rounded-full overflow-hidden"
-                  style={{ background: "rgba(0,0,0,0.06)" }}
+                  style={{ background: "rgba(255,255,255,0.06)" }}
                 >
                   <div
                     className="h-full rounded-full transition-all duration-500"
                     style={{
                       width: `${progressPercent}%`,
                       background:
-                        "linear-gradient(90deg, #F27C88, #FACDD0)",
+                        "linear-gradient(90deg, #E8A0B0, #D4A0C8)",
                     }}
                   />
                 </div>
@@ -1378,7 +1155,7 @@ export default function RecommendationsPage() {
                         key={label}
                         className="text-[10px] font-medium"
                         style={{
-                          color: active ? "#F27C88" : "#AEAEB2",
+                          color: active ? "#E8A0B0" : "rgba(255,255,255,0.25)",
                         }}
                       >
                         {label}
@@ -1396,7 +1173,7 @@ export default function RecommendationsPage() {
           <div className="glass rounded-3xl p-10 flex flex-col items-center gap-6">
             <div
               className="w-20 h-20 rounded-3xl flex items-center justify-center"
-              style={{ background: "rgba(242,124,136,0.06)" }}
+              style={{ background: "rgba(255,255,255,0.04)" }}
             >
               <svg
                 width="36"
@@ -1406,7 +1183,7 @@ export default function RecommendationsPage() {
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                style={{ stroke: "#F27C88" }}
+                style={{ stroke: "#E8A0B0" }}
               >
                 <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z" />
               </svg>
@@ -1414,12 +1191,11 @@ export default function RecommendationsPage() {
 
             <div className="text-center">
               <p
-                className="text-sm font-medium"
-                style={{ color: "#1D1D1F" }}
+                className="text-sm font-medium text-primary"
               >
                 {targetDayLabel}还没有穿搭推荐
               </p>
-              <p className="text-xs mt-1" style={{ color: "#AEAEB2" }}>
+              <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.25)" }}>
                 {targetDay === 0
                   ? "AI 将从你的衣橱中智能匹配，生成 3 套最佳穿搭"
                   : `根据${targetDayLabel}天气预报，提前智能搭配 3 套穿搭`}
@@ -1431,8 +1207,8 @@ export default function RecommendationsPage() {
                 href="/persons"
                 className="px-6 py-3 rounded-full text-sm font-semibold text-white"
                 style={{
-                  background: "linear-gradient(135deg, #F27C88, #FACDD0)",
-                  boxShadow: "0 4px 16px rgba(242,124,136,0.25)",
+                  background: "linear-gradient(135deg, #E8A0B0, #D4A0C8)",
+                  boxShadow: "0 4px 16px rgba(232,160,176,0.25)",
                 }}
               >
                 先上传人像
@@ -1451,9 +1227,9 @@ export default function RecommendationsPage() {
                   disabled={!selectedPerson || quickLoading}
                   className="px-6 py-2.5 rounded-full text-sm font-medium transition-all"
                   style={{
-                    color: "#F27C88",
-                    background: "rgba(242,124,136,0.08)",
-                    border: "1px solid rgba(242,124,136,0.15)",
+                    color: "#E8A0B0",
+                    background: "rgba(232,160,176,0.08)",
+                    border: "1px solid rgba(232,160,176,0.15)",
                     opacity: quickLoading ? 0.7 : 1,
                   }}
                 >
@@ -1476,7 +1252,7 @@ export default function RecommendationsPage() {
           <div className="glass rounded-3xl p-8 flex flex-col items-center gap-4">
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center"
-              style={{ background: "rgba(255,59,48,0.06)" }}
+              style={{ background: "rgba(255,59,48,0.1)" }}
             >
               <svg
                 width="24"
@@ -1498,7 +1274,7 @@ export default function RecommendationsPage() {
               onClick={handleGenerate}
               className="px-6 py-2.5 rounded-full text-sm font-semibold text-white"
               style={{
-                background: "linear-gradient(135deg, #F27C88, #FACDD0)",
+                background: "linear-gradient(135deg, #E8A0B0, #D4A0C8)",
               }}
             >
               重试
@@ -1530,9 +1306,9 @@ export default function RecommendationsPage() {
                 disabled={rescoring || isProcessing}
                 className="px-5 py-2.5 rounded-full text-sm font-medium transition-all"
                 style={{
-                  color: rescoring ? "#AEAEB2" : "#F27C88",
-                  background: "rgba(242,124,136,0.08)",
-                  border: "1px solid rgba(242,124,136,0.15)",
+                  color: rescoring ? "rgba(255,255,255,0.25)" : "#E8A0B0",
+                  background: "rgba(232,160,176,0.08)",
+                  border: "1px solid rgba(232,160,176,0.15)",
                   opacity: rescoring ? 0.7 : 1,
                 }}
               >
@@ -1550,9 +1326,9 @@ export default function RecommendationsPage() {
                 disabled={isProcessing || rescoring}
                 className="px-5 py-2.5 rounded-full text-sm font-medium transition-colors"
                 style={{
-                  color: "#6E6E73",
-                  background: "rgba(0,0,0,0.03)",
-                  border: "1px solid rgba(0,0,0,0.06)",
+                  color: "rgba(255,255,255,0.4)",
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.06)",
                 }}
               >
                 重新推荐
@@ -1562,9 +1338,9 @@ export default function RecommendationsPage() {
                 disabled={quickLoading}
                 className="px-5 py-2.5 rounded-full text-sm font-medium transition-all"
                 style={{
-                  color: "#F27C88",
-                  background: "rgba(242,124,136,0.08)",
-                  border: "1px solid rgba(242,124,136,0.15)",
+                  color: "#E8A0B0",
+                  background: "rgba(232,160,176,0.08)",
+                  border: "1px solid rgba(232,160,176,0.15)",
                 }}
               >
                 Surprise Me
@@ -1610,9 +1386,9 @@ export default function RecommendationsPage() {
             <button
               onClick={() => setPreviewImage(null)}
               className="absolute -top-3 -right-3 w-8 h-8 rounded-full flex items-center justify-center"
-              style={{ background: "rgba(255,255,255,0.9)" }}
+              style={{ background: "rgba(20,20,22,0.8)" }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1D1D1F" strokeWidth="2.5" strokeLinecap="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2.5" strokeLinecap="round">
                 <path d="M18 6 6 18M6 6l12 12" />
               </svg>
             </button>
@@ -1632,6 +1408,6 @@ export default function RecommendationsPage() {
           bottomItem={shareRec.bottomItem ? { name: shareRec.bottomItem.name, imagePath: shareRec.bottomItem.imagePath } : null}
         />
       )}
-    </div>
+    </PageShell>
   );
 }
