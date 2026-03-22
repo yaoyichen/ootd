@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "./AuthProvider";
 
 const NAV_ITEMS = [
   {
@@ -72,7 +73,8 @@ const NAV_ITEMS = [
 
 export function NavBar() {
   const pathname = usePathname();
-  if (pathname.startsWith("/business")) return null;
+  const { user } = useAuth();
+  if (pathname.startsWith("/business") || pathname === "/login" || pathname === "/register") return null;
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -93,7 +95,7 @@ export function NavBar() {
       <div className="max-w-lg mx-auto flex items-center justify-around px-2 py-1.5">
         {NAV_ITEMS.map((item) => {
           const active = isActive(item.href);
-          const href = item.href === "/me" ? "/favorites" : item.href;
+          const href = item.href === "/me" ? (user ? "/me" : "/login") : item.href;
           return (
             <Link
               key={item.href}

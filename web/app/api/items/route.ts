@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/api-auth";
 
 export async function GET(req: NextRequest) {
+  const { user, error } = await requireAuth(req);
+  if (error) return error;
+
   try {
     const category = req.nextUrl.searchParams.get("category");
     const search = req.nextUrl.searchParams.get("q");
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { userId: user.userId };
     if (category) where.category = category;
     if (search) {
       where.OR = [
@@ -28,6 +32,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const { user, error } = await requireAuth(req);
+  if (error) return error;
+
   try {
     const body = await req.json();
     const { name, category, imagePath, ...rest } = body;
@@ -40,7 +47,7 @@ export async function POST(req: NextRequest) {
     }
 
     const item = await prisma.item.create({
-      data: { name, category, imagePath, ...rest },
+      data: { name, category, imagePath, userId: user.userId, ...rest },
     });
 
     return NextResponse.json(item, { status: 201 });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/api-auth";
 
 export async function GET(req: NextRequest) {
   try {
@@ -70,6 +71,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const { user, error } = await requireAuth(req);
+  if (error) return error;
+
   const body = await req.json();
   const { outfitId, caption } = body;
 
@@ -78,7 +82,7 @@ export async function POST(req: NextRequest) {
   }
 
   const outfit = await prisma.outfit.findUnique({ where: { id: outfitId } });
-  if (!outfit || !outfit.resultImagePath) {
+  if (!outfit || !outfit.resultImagePath || outfit.userId !== user.userId) {
     return NextResponse.json({ error: "Outfit not found or has no result image" }, { status: 404 });
   }
 
@@ -94,6 +98,7 @@ export async function POST(req: NextRequest) {
     data: {
       outfitId,
       caption: caption || null,
+      userId: user.userId,
     },
   });
 

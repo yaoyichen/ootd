@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/api-auth";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { user, error } = await requireAuth(req);
+  if (error) return error;
+
   const { id } = await params;
   const body = await req.json();
   const { itemId } = body;
@@ -39,6 +43,7 @@ export async function POST(
       thickness: sourceItem.thickness,
       description: sourceItem.description,
       imagePath: sourceItem.imagePath,
+      userId: user.userId,
     },
   });
 

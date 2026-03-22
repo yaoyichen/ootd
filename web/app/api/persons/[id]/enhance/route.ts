@@ -3,15 +3,19 @@ import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { analyzePersonImage, enhancePersonImage } from "@/lib/person-enhance";
+import { requireAuth } from "@/lib/api-auth";
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { user, error } = await requireAuth(req);
+  if (error) return error;
+
   const { id } = await params;
 
   const person = await prisma.personImage.findUnique({ where: { id } });
-  if (!person) {
+  if (!person || person.userId !== user.userId) {
     return NextResponse.json({ error: "人像不存在" }, { status: 404 });
   }
 

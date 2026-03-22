@@ -4,6 +4,7 @@ import path from "node:path";
 import { prisma } from "@/lib/prisma";
 import { resolveImage } from "@/lib/tryon";
 import { TRYON_NEGATIVE_PROMPT, buildTryonPrompt } from "@/lib/prompts/tryon";
+import { requireAuth } from "@/lib/api-auth";
 
 const API_KEY = process.env.DASHSCOPE_API_KEY ?? "";
 const MODEL = "qwen-image-2.0-pro";
@@ -27,6 +28,9 @@ async function downloadImage(url: string): Promise<string> {
 }
 
 export async function POST(req: NextRequest) {
+  const { user, error } = await requireAuth(req);
+  if (error) return error;
+
   if (!API_KEY) {
     return NextResponse.json(
       { error: "DASHSCOPE_API_KEY not configured" },
@@ -146,6 +150,7 @@ export async function POST(req: NextRequest) {
           bottomItemId: bottomItemId || null,
           resultImagePath: localPath,
           isFavorite: true,
+          userId: user.userId,
         },
       });
     }

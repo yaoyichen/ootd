@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/api-auth";
 
 export async function POST(req: NextRequest) {
+  const { user, error } = await requireAuth(req);
+  if (error) return error;
+
   try {
     const { imageHash } = (await req.json()) as { imageHash: string };
 
@@ -13,7 +17,7 @@ export async function POST(req: NextRequest) {
     }
 
     const existing = await prisma.item.findFirst({
-      where: { imageHash },
+      where: { imageHash, userId: user.userId },
       select: {
         id: true,
         name: true,

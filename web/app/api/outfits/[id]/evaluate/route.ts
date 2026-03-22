@@ -1,20 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { scoreOutfit } from "@/lib/qwen";
+import { requireAuth } from "@/lib/api-auth";
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { user, error } = await requireAuth(req);
+  if (error) return error;
+
   try {
     const { id } = await params;
-    const body = await _req.json().catch(() => ({}));
+    const body = await req.json().catch(() => ({}));
     const force = body.force === true;
 
     const outfit = await prisma.outfit.findUnique({ where: { id } });
-    if (!outfit) {
+    if (!outfit || outfit.userId !== user.userId) {
       return NextResponse.json({ error: "穿搭不存在" }, { status: 404 });
     }
 

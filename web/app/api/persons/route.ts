@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/api-auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const { user, error } = await requireAuth(req);
+  if (error) return error;
+
   try {
     const persons = await prisma.personImage.findMany({
+      where: { userId: user.userId },
       orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
     });
     return NextResponse.json(persons);
@@ -14,6 +19,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const { user, error } = await requireAuth(req);
+  if (error) return error;
+
   try {
     const body = await req.json();
     const { name, imagePath } = body;
@@ -25,11 +33,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const count = await prisma.personImage.count();
+    const count = await prisma.personImage.count({ where: { userId: user.userId } });
     const isDefault = count === 0;
 
     const person = await prisma.personImage.create({
-      data: { name, imagePath, isDefault },
+      data: { name, imagePath, isDefault, userId: user.userId },
     });
 
     return NextResponse.json(person, { status: 201 });

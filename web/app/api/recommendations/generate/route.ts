@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { suggestCombinations, scoreOutfit } from "@/lib/qwen";
 import { generateTryon } from "@/lib/tryon";
 import { getWeatherData, toWeatherSummary, buildWeatherPromptContext, DEFAULT_CITY_ID } from "@/lib/weather";
+import { requireAuth } from "@/lib/api-auth";
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -32,9 +33,12 @@ async function pMap<T, R>(
 }
 
 export async function POST(req: NextRequest) {
+  const { user, error } = await requireAuth(req);
+  if (error) return error;
+
   try {
     const body = await req.json();
-    const { personImageId, locationId, targetDay = 0 } = body;
+    const { personImageId, locationId, targetDay = 0, occasion } = body;
 
     if (!personImageId) {
       return new Response(JSON.stringify({ error: "personImageId is required" }), {
@@ -46,14 +50,14 @@ export async function POST(req: NextRequest) {
     const person = await prisma.personImage.findUnique({
       where: { id: personImageId },
     });
-    if (!person) {
+    if (!person || person.userId !== user.userId) {
       return new Response(JSON.stringify({ error: "人像不存在" }), {
         status: 404,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    const items = await prisma.item.findMany();
+    const items = await prisma.item.findMany({ where: { userId: user.userId } });
     const tops = items.filter(
       (i) => i.category === "TOP" || i.category === "OUTERWEAR"
     );
@@ -121,7 +125,8 @@ export async function POST(req: NextRequest) {
               occasion: i.occasion,
             })),
             weatherContext,
-            personDescription
+            personDescription,
+            occasion
           );
 
           if (combinations.length === 0) {
@@ -165,6 +170,7 @@ export async function POST(req: NextRequest) {
                     personImageId: person.id,
                     topItemId: topItem.id,
                     bottomItemId: bottomItem.id,
+                    userId: user.userId,
                   });
 
                 try {
@@ -261,7 +267,7 @@ export async function POST(req: NextRequest) {
           const top5 = scored.slice(0, 5);
           const date = todayStr();
 
-          await prisma.dailyRecommendation.deleteMany({ where: { date } });
+          await prisma.dailyRecommendation.deleteMany({ where: { date, userId: user.userId } });
 
           for (let i = 0; i < top5.length; i++) {
             await prisma.dailyRecommendation.create({
@@ -270,6 +276,7 @@ export async function POST(req: NextRequest) {
                 rank: i + 1,
                 outfitId: top5[i].outfitId,
                 reason: top5[i].reason,
+                userId: user.userId,
               },
             });
           }

@@ -1,7 +1,7 @@
 # 数据库参考文档
 
 **技术栈**：Prisma 7 + SQLite + better-sqlite3 adapter
-**更新日期**：2026-03-22（v7：新增 ShowcasePost model + Outfit 关系字段，穿搭广场功能）
+**更新日期**：2026-03-22（v8：新增 User model + 用户认证系统，所有业务表增加 userId 实现数据隔离）
 
 ---
 
@@ -12,6 +12,8 @@
 | Prisma | 7.x | ORM，提供类型安全的数据库操作 |
 | SQLite | — | 轻量级文件数据库，零配置 |
 | @prisma/adapter-better-sqlite3 | 7.x | Prisma 7 要求的驱动适配器 |
+| bcryptjs | — | 密码哈希（salt rounds 12） |
+| jose | — | JWT 签发/验证（HS256，7天过期） |
 
 ### Prisma 7 与旧版本的关键区别
 
@@ -24,6 +26,7 @@ Prisma 7 移除了 `schema.prisma` 中的 `datasource.url` 配置，改为在 `p
 ```
 web/
 ├── prisma.config.ts              # Prisma CLI 配置（数据库 URL）
+├── middleware.ts                  # 路由保护（JWT 验证，未登录重定向）
 ├── prisma/
 │   ├── schema.prisma             # 数据模型定义 + 生成器配置
 │   └── generated/prisma/         # 自动生成的客户端代码（gitignore）
@@ -32,6 +35,8 @@ web/
 │       └── ...
 ├── lib/
 │   ├── prisma.ts                 # 运行时客户端单例
+│   ├── auth.ts                   # 认证核心（JWT签发/验证、密码哈希、Cookie管理）
+│   ├── api-auth.ts               # API 路由认证守卫（requireAuth）
 │   ├── qwen.ts                   # DashScope Qwen API 封装（评分 + 搭配推荐）
 │   └── tryon.ts                  # 虚拟试穿生成逻辑（含缓存）
 ├── dev.db                        # SQLite 数据库文件（gitignore）
@@ -76,6 +81,33 @@ if (process.env.NODE_ENV !== "production") {
 
 > **注意**：`prisma.config.ts` 和 `lib/prisma.ts` 中的数据库路径必须指向同一个文件（`web/dev.db`），否则会出现「数据写入了但读不到」的问题。
 
+**`lib/auth.ts`** — 用户认证核心库：
+
+- `hashPassword(plain)` — bcryptjs 哈希，salt rounds 12
+- `verifyPassword(plain, hash)` — bcryptjs 比对
+- `signToken({ userId, email })` — jose SignJWT，HS256，7 天过期
+- `verifyToken(token)` — jose jwtVerify，返回 `{ userId, email }` 或 null
+- `getCurrentUser(request)` — 从 Cookie 读取 token → verifyToken → 返回 payload
+- `setAuthCookie(response, token)` — 设置 httpOnly, sameSite=lax, 7 天 maxAge
+- `clearAuthCookie(response)` — 清除 cookie
+
+**`lib/api-auth.ts`** — API 路由认证守卫：
+
+```typescript
+import { requireAuth } from "@/lib/api-auth";
+
+// 每个受保护 API route 开头调用
+const { user, error } = await requireAuth(req);
+if (error) return error; // 401 未登录
+// user.userId, user.email 可用
+```
+
+**`middleware.ts`** — Next.js 路由中间件，保护所有非公开路由：
+
+- **公开路径**：`/`, `/login`, `/register`, `/api/auth/*`, `/api/weather`, `/_next/*`, `/fonts/*`, `/uploads/*`, `/favicon.ico`
+- **半公开**：`GET /api/showcase`、`GET/POST /api/showcase/[id]/like` 公开
+- **其余路径**：无 token → API 返回 401 / 页面重定向 `/login?from=原路径`
+
 **`lib/qwen.ts`** — DashScope Qwen API 封装，包含两个核心函数：
 
 - `scoreOutfit(imagePath)` — 调用 Qwen-VL-Max 对穿搭效果图进行五维评分，返回 `{ score, dims, evaluation }`
@@ -83,18 +115,35 @@ if (process.env.NODE_ENV !== "production") {
 
 **`lib/tryon.ts`** — 虚拟试穿生成逻辑：
 
-- `generateTryon(input)` — 调用 DashScope qwen-image-2.0-pro 生成试穿图。内置缓存机制，同一搭配组合（人像 + 上衣 + 下装）不重复生成
+- `generateTryon(input)` — 调用 DashScope qwen-image-2.0-pro 生成试穿图。内置缓存机制，同一搭配组合（人像 + 上衣 + 下装）不重复生成。`input.userId` 必传，用于关联 Outfit 记录
 - `resolveImage(input)` — 将本地图片路径转换为 Base64 Data URL
 
 ---
 
 ## 三、数据模型
 
+### User（用户）
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| id | String | 是 | cuid() 自动生成 | 主键 |
+| email | String | 是 | — | 邮箱（唯一） |
+| passwordHash | String | 是 | — | bcryptjs 哈希后的密码 |
+| nickname | String? | 否 | — | 昵称 |
+| avatarPath | String? | 否 | — | 头像图片路径 |
+| createdAt | DateTime | 是 | now() | 注册时间 |
+| updatedAt | DateTime | 是 | 自动更新 | 更新时间 |
+
+**唯一索引**：`email`
+
+**关系**：User 拥有 items、personImages、outfits、showcasePosts、dailyRecommendations（级联删除）
+
 ### Item（衣物单品）
 
 | 字段 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
 | id | String | 是 | cuid() 自动生成 | 主键 |
+| userId | String | 是 | — | 所属用户 ID（外键） |
 | name | String | 是 | — | 单品名称 |
 | category | String | 是 | — | 分类，见下方枚举 |
 | subcategory | String? | 否 | — | 子分类 |
@@ -102,10 +151,6 @@ if (process.env.NODE_ENV !== "production") {
 | style | String? | 否 | — | 风格 |
 | season | String? | 否 | — | 季节（春/夏/秋/冬/四季） |
 | occasion | String? | 否 | — | 场合（日常/上班/约会/运动/正式/出行） |
-| brand | String? | 否 | — | 品牌（已废弃） |
-| price | Float? | 否 | — | 购入价格（已废弃） |
-| purchaseDate | String? | 否 | — | 购入日期（已废弃） |
-| notes | String? | 否 | — | 备注（已废弃） |
 | material | String? | 否 | — | 材质（棉/牛仔/丝绸/羊毛/涤纶/皮革/麻/雪纺/针织/灯芯绒） |
 | fit | String? | 否 | — | 版型（修身/宽松/常规/oversize） |
 | pattern | String? | 否 | — | 图案（纯色/条纹/格纹/印花/碎花/波点/拼接） |
@@ -116,6 +161,8 @@ if (process.env.NODE_ENV !== "production") {
 | imageHash | String? | 否 | — | 原始图片 SHA-256 哈希，用于检测重复上传 |
 | createdAt | DateTime | 是 | now() | 创建时间 |
 | updatedAt | DateTime | 是 | 自动更新 | 更新时间 |
+
+**索引**：`@@index([userId])`
 
 **category 枚举值**：
 
@@ -133,12 +180,15 @@ if (process.env.NODE_ENV !== "production") {
 | 字段 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
 | id | String | 是 | cuid() 自动生成 | 主键 |
+| userId | String | 是 | — | 所属用户 ID（外键） |
 | name | String | 是 | — | 人像名称 |
 | imagePath | String | 是 | — | 图片路径（如 `/uploads/persons/xxx.jpg`） |
 | enhancedImagePath | String? | 否 | — | AI 美化后的图片路径（如 `/uploads/persons-enhanced/xxx.png`） |
 | description | String? | 否 | — | AI 分析的结构化描述 JSON（见下方说明） |
 | isDefault | Boolean | 是 | false | 是否为默认人像（试穿时自动选中） |
 | createdAt | DateTime | 是 | now() | 创建时间 |
+
+**索引**：`@@index([userId])`
 
 **description 字段格式**：
 
@@ -171,6 +221,7 @@ JSON 字符串，包含 AI 分析的人像特征：
 | 字段 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
 | id | String | 是 | cuid() 自动生成 | 主键 |
+| userId | String | 是 | — | 所属用户 ID（外键） |
 | personImageId | String | 是 | — | 关联的人像 ID |
 | topItemId | String? | 否 | — | 关联的上衣 ID |
 | bottomItemId | String? | 否 | — | 关联的下装 ID |
@@ -184,6 +235,7 @@ JSON 字符串，包含 AI 分析的人像特征：
 | updatedAt | DateTime | 是 | 自动更新 | 更新时间 |
 
 **联合唯一索引**：`@@unique([personImageId, topItemId, bottomItemId])`
+**索引**：`@@index([userId])`
 
 同一组搭配（人像 + 上衣 + 下装）只会保存一条记录，重新生成时通过 `upsert` 更新 `resultImagePath`。
 
@@ -214,15 +266,16 @@ JSON 字符串，包含五个评分维度（每项 1–100 分）：
 | 字段 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
 | id | String | 是 | cuid() 自动生成 | 主键 |
+| userId | String | 是 | — | 所属用户 ID（外键） |
 | date | String | 是 | — | 推荐日期，格式 `YYYY-MM-DD` |
 | rank | Int | 是 | — | 排名（1, 2, 3） |
 | outfitId | String | 是 | — | 关联的 Outfit ID |
 | reason | String? | 否 | — | LLM 给出的推荐搭配理由 |
 | createdAt | DateTime | 是 | now() | 创建时间 |
 
-**联合唯一索引**：`@@unique([date, rank])`
+**联合唯一索引**：`@@unique([userId, date, rank])`
 
-每天保存 Top 3 推荐记录。重新生成推荐时，先删除当天已有记录再写入新数据。
+每天每个用户保存 Top 5 推荐记录。重新生成推荐时，先删除当天该用户的已有记录再写入新数据。
 
 ### WeatherCache（天气缓存）
 
@@ -242,12 +295,14 @@ JSON 字符串，包含五个评分维度（每项 1–100 分）：
 - 同一城市同一小时内只调一次 QWeather API，后续请求直接读 DB（毫秒级响应）
 - 写入新缓存时自动清理所有 `expiresAt < now()` 的过期记录
 - 30 天 TTL，表不会无限膨胀
+- WeatherCache 不绑定用户，全局共享
 
 ### ShowcasePost（穿搭广场帖子）
 
 | 字段 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
 | id | String | 是 | cuid() 自动生成 | 主键 |
+| userId | String | 是 | — | 发布者用户 ID（外键） |
 | outfitId | String | 是 | — | 关联的 Outfit ID（外键，级联删除） |
 | caption | String? | 否 | — | 用户配文 |
 | likes | Int | 是 | 0 | 点赞数 |
@@ -260,14 +315,95 @@ JSON 字符串，包含五个评分维度（每项 1–100 分）：
 **Outfit 反向关系**：`showcasePosts ShowcasePost[]`
 
 **索引**：
+- `@@index([userId])` — 按用户查询
 - `@@index([isPublic, createdAt])` — 最新排序查询
 - `@@index([isPublic, likes])` — 最热排序查询
 
-**隐私保护**：只分享试穿效果图（AI 生成图），不暴露用户原始人像照片。分享后可随时撤回（设 `isPublic = false`），不影响自己的收藏。
+**隐私保护**：只分享试穿效果图（AI 生成图），不暴露用户原始人像照片。分享后可随时撤回（设 `isPublic = false`），不影响自己的收藏。仅帖子所有者可撤回。
 
 ---
 
-## 四、API 路由参考
+## 四、认证系统
+
+### 认证方案
+
+自定义 JWT 认证：`bcryptjs` 哈希密码 + `jose` 签发/验证 JWT + HTTP-only Cookie 存 token。
+
+- Token 有效期 7 天，HS256 签名
+- Cookie：`auth-token`，httpOnly + sameSite=lax + secure(prod)
+- 环境变量：`JWT_SECRET`（至少 32 字符）
+
+### 认证 API
+
+| 方法 | 路径 | 说明 | 认证 |
+|------|------|------|------|
+| POST | `/api/auth/register` | 注册 | 无需 |
+| POST | `/api/auth/login` | 登录 | 无需 |
+| POST | `/api/auth/logout` | 登出（清除 cookie） | 无需 |
+| GET | `/api/auth/me` | 获取当前用户信息 | 需要 |
+
+**POST /api/auth/register** 请求体：
+
+```json
+{
+  "email": "user@example.com",
+  "password": "123456",
+  "nickname": "可选昵称"
+}
+```
+
+校验：邮箱格式、密码 ≥ 6 位、邮箱唯一。成功后自动设置 cookie 并返回用户信息。
+
+**POST /api/auth/login** 请求体：
+
+```json
+{
+  "email": "user@example.com",
+  "password": "123456"
+}
+```
+
+**GET /api/auth/me** 返回：
+
+```json
+{
+  "user": {
+    "id": "clxxx",
+    "email": "user@example.com",
+    "nickname": "昵称",
+    "avatarPath": null,
+    "createdAt": "2026-03-22T..."
+  }
+}
+```
+
+### 数据隔离
+
+所有业务查询自动按 `userId` 过滤：
+
+```typescript
+const { user, error } = await requireAuth(req);
+if (error) return error;
+
+const items = await prisma.item.findMany({
+  where: { userId: user.userId },
+});
+```
+
+单条记录的增删改需验证所有权：
+
+```typescript
+const item = await prisma.item.findUnique({ where: { id } });
+if (!item || item.userId !== user.userId) {
+  return NextResponse.json({ error: "Not found" }, { status: 404 });
+}
+```
+
+---
+
+## 五、API 路由参考
+
+> 除特别标注外，所有 API 均需登录（由 middleware 和 requireAuth 双重保护）。
 
 ### 图片上传
 
@@ -300,12 +436,12 @@ JSON 字符串，包含五个评分维度（每项 1–100 分）：
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/items` | 获取单品列表 |
-| POST | `/api/items` | 创建单品（支持 imageHash + originalImagePath） |
-| POST | `/api/items/check-duplicate` | 根据 imageHash 检测重复上传 |
-| GET | `/api/items/[id]` | 获取单品详情 |
-| PUT | `/api/items/[id]` | 更新单品 |
-| DELETE | `/api/items/[id]` | 删除单品（同时删除图片文件） |
+| GET | `/api/items` | 获取当前用户的单品列表 |
+| POST | `/api/items` | 创建单品（自动关联当前用户） |
+| POST | `/api/items/check-duplicate` | 根据 imageHash 检测当前用户是否重复上传 |
+| GET | `/api/items/[id]` | 获取单品详情（需所有权） |
+| PUT | `/api/items/[id]` | 更新单品（需所有权） |
+| DELETE | `/api/items/[id]` | 删除单品（需所有权，同时删除图片文件） |
 
 **GET /api/items** 查询参数：
 
@@ -332,15 +468,17 @@ JSON 字符串，包含五个评分维度（每项 1–100 分）：
 }
 ```
 
+> userId 由后端从 JWT 自动注入，前端无需传递。
+
 ### 人像 CRUD
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/persons` | 获取人像列表（默认人像排在最前） |
-| POST | `/api/persons` | 创建人像（首张自动设为默认） |
-| GET | `/api/persons/[id]` | 获取人像详情 |
-| PUT | `/api/persons/[id]` | 更新人像（支持设为默认） |
-| DELETE | `/api/persons/[id]` | 删除人像（同时删除图片文件） |
+| GET | `/api/persons` | 获取当前用户的人像列表（默认人像排在最前） |
+| POST | `/api/persons` | 创建人像（该用户的首张自动设为默认） |
+| GET | `/api/persons/[id]` | 获取人像详情（需所有权） |
+| PUT | `/api/persons/[id]` | 更新人像（需所有权，支持设为默认） |
+| DELETE | `/api/persons/[id]` | 删除人像（需所有权，同时删除图片文件） |
 
 **PUT /api/persons/[id]** 设为默认人像：
 
@@ -348,21 +486,21 @@ JSON 字符串，包含五个评分维度（每项 1–100 分）：
 { "isDefault": true }
 ```
 
-该操作会先将所有已有人像的 `isDefault` 置为 `false`，再将目标人像设为 `true`。
+该操作会先将该用户所有已有人像的 `isDefault` 置为 `false`，再将目标人像设为 `true`。
 
 ### 穿搭记录
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/outfits` | 查询穿搭（支持缓存查询和收藏列表） |
-| PUT | `/api/outfits/[id]` | 更新穿搭（收藏/取消收藏） |
-| DELETE | `/api/outfits/[id]` | 删除穿搭（同时删除结果图片） |
+| GET | `/api/outfits` | 查询当前用户的穿搭（支持缓存查询和收藏列表） |
+| PUT | `/api/outfits/[id]` | 更新穿搭（需所有权，收藏/取消收藏） |
+| DELETE | `/api/outfits/[id]` | 删除穿搭（需所有权，同时删除结果图片） |
 
 **GET /api/outfits** 查询参数：
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
-| favorites | string | `?favorites=true` 获取所有收藏穿搭列表 |
+| favorites | string | `?favorites=true` 获取当前用户所有收藏穿搭列表 |
 | personImageId | string | 按搭配组合查缓存（必填，与下方参数配合使用） |
 | topItemId | string | 上衣 ID（可选） |
 | bottomItemId | string | 下装 ID（可选） |
@@ -373,13 +511,13 @@ JSON 字符串，包含五个评分维度（每项 1–100 分）：
 { "isFavorite": true }
 ```
 
-> 穿搭记录由 `/api/tryon` 在生成成功后自动创建/更新（upsert），无需手动 POST。
+> 穿搭记录由 `/api/tryon` 在生成成功后自动创建/更新（upsert），自动关联当前用户，无需手动 POST。
 
 ### AI 评分
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | `/api/outfits/[id]/evaluate` | 对单套穿搭进行 AI 五维评分 |
+| POST | `/api/outfits/[id]/evaluate` | 对单套穿搭进行 AI 五维评分（需所有权） |
 
 无请求体。返回：
 
@@ -403,9 +541,9 @@ JSON 字符串，包含五个评分维度（每项 1–100 分）：
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/recommendations` | 获取指定日期的推荐列表 |
-| POST | `/api/recommendations/generate` | 生成每日推荐（SSE 流式响应） |
-| POST | `/api/recommendations/rescore` | 仅重新打分（复用已有穿搭图像） |
+| GET | `/api/recommendations` | 获取当前用户指定日期的推荐列表 |
+| POST | `/api/recommendations/generate` | 从当前用户衣橱生成每日推荐（SSE 流式响应） |
+| POST | `/api/recommendations/rescore` | 仅重新打分当前用户的推荐（复用已有穿搭图像） |
 
 **GET /api/recommendations** 查询参数：
 
@@ -464,14 +602,14 @@ JSON 字符串，包含五个评分维度（每项 1–100 分）：
 
 ### 穿搭广场
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/showcase` | 获取广场帖子列表 |
-| POST | `/api/showcase` | 发布穿搭到广场 |
-| DELETE | `/api/showcase/[id]` | 撤回帖子（软删除，设 isPublic=false） |
-| POST | `/api/showcase/[id]/like` | 点赞（likes +1） |
-| POST | `/api/showcase/[id]/tryon` | 递增试穿计数（tryonCount +1） |
-| POST | `/api/showcase/[id]/copy-item` | 一键加衣橱（复制单品到用户衣橱） |
+| 方法 | 路径 | 说明 | 认证 |
+|------|------|------|------|
+| GET | `/api/showcase` | 获取广场帖子列表 | **公开** |
+| POST | `/api/showcase` | 发布穿搭到广场（需验证 outfit 所有权） | 需要 |
+| DELETE | `/api/showcase/[id]` | 撤回帖子（需验证帖子所有权） | 需要 |
+| POST | `/api/showcase/[id]/like` | 点赞（likes +1） | **公开** |
+| POST | `/api/showcase/[id]/tryon` | 递增试穿计数（tryonCount +1） | 需要 |
+| POST | `/api/showcase/[id]/copy-item` | 一键加衣橱（复制单品到当前用户衣橱） | 需要 |
 
 **GET /api/showcase** 查询参数：
 
@@ -488,7 +626,7 @@ JSON 字符串，包含五个评分维度（每项 1–100 分）：
 { "outfitId": "clxxx", "caption": "今日穿搭" }
 ```
 
-同一 outfitId 不允许重复发布（返回 409）。
+同一 outfitId 不允许重复发布（返回 409）。userId 由后端自动注入。
 
 **POST /api/showcase/[id]/copy-item** 请求体：
 
@@ -496,45 +634,49 @@ JSON 字符串，包含五个评分维度（每项 1–100 分）：
 { "itemId": "clxxx" }
 ```
 
-复制源 Item 的所有属性字段（name/category/color/style/season 等），创建为新 Item。不复制 imageHash/originalImagePath。
+复制源 Item 的所有属性字段（name/category/color/style/season 等），创建为当前用户的新 Item。不复制 imageHash/originalImagePath。
 
 > **试穿同款**：广场页的「试穿同款」直接调用 `/api/tryon`（与试穿页完全相同的链路），传入广场帖子关联的单品图片 + 用户人像，复用缓存机制。试穿完成后自动触发 AI 评分，结果弹窗支持收藏、下载、加衣橱。
 
 ---
 
-## 五、常用 Prisma 查询示例
+## 六、常用 Prisma 查询示例
 
-### 查询列表（带条件筛选 + 排序）
+### 带用户隔离的查询
 
 ```typescript
 import { prisma } from "@/lib/prisma";
 
-// 获取所有上衣，按创建时间倒序
+// 获取当前用户的所有上衣，按创建时间倒序
 const tops = await prisma.item.findMany({
-  where: { category: "TOP" },
+  where: { userId: user.userId, category: "TOP" },
   orderBy: { createdAt: "desc" },
 });
 
-// 模糊搜索
+// 模糊搜索（限当前用户）
 const results = await prisma.item.findMany({
   where: {
+    userId: user.userId,
     OR: [
       { name: { contains: "T恤" } },
-      { brand: { contains: "优衣库" } },
+      { description: { contains: "T恤" } },
     ],
   },
 });
 ```
 
-### 按 ID 查询
+### 按 ID 查询（含所有权验证）
 
 ```typescript
 const item = await prisma.item.findUnique({
   where: { id: "clxxxxxxxxxx" },
 });
+if (!item || item.userId !== user.userId) {
+  return NextResponse.json({ error: "Not found" }, { status: 404 });
+}
 ```
 
-### 创建记录
+### 创建记录（关联用户）
 
 ```typescript
 const newItem = await prisma.item.create({
@@ -543,8 +685,7 @@ const newItem = await prisma.item.create({
     category: "BOTTOM",
     imagePath: "/uploads/items/xxx.jpg",
     color: "黑色",
-    brand: "Levi's",
-    price: 399,
+    userId: user.userId,
   },
 });
 ```
@@ -555,12 +696,12 @@ const newItem = await prisma.item.create({
 // 更新单条
 const updated = await prisma.item.update({
   where: { id: "clxxxxxxxxxx" },
-  data: { color: "深蓝色", price: 299 },
+  data: { color: "深蓝色" },
 });
 
-// 批量更新（如：重置所有人像的默认状态）
+// 批量更新（如：重置当前用户所有人像的默认状态）
 await prisma.personImage.updateMany({
-  where: { isDefault: true },
+  where: { isDefault: true, userId: user.userId },
   data: { isDefault: false },
 });
 ```
@@ -587,18 +728,11 @@ await prisma.item.delete({
 > await prisma.item.delete({ where: { id } });
 > ```
 
-### 计数
+### 计数（限当前用户）
 
 ```typescript
-const count = await prisma.personImage.count();
-```
-
-### 多字段排序
-
-```typescript
-// 默认人像排在最前，然后按创建时间倒序
-const persons = await prisma.personImage.findMany({
-  orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
+const count = await prisma.personImage.count({
+  where: { userId: user.userId },
 });
 ```
 
@@ -623,36 +757,23 @@ const outfit = await prisma.outfit.upsert({
     topItemId: "clyyy",
     bottomItemId: null,
     resultImagePath: "/uploads/outfits/new.jpg",
+    userId: user.userId,
   },
 });
 ```
 
-### 按联合字段查询缓存
+### 按条件筛选（当前用户的收藏列表）
 
 ```typescript
-// 查找是否已有相同搭配的生成记录
-const cached = await prisma.outfit.findFirst({
-  where: {
-    personImageId: "clxxx",
-    topItemId: "clyyy",
-    bottomItemId: null,
-  },
-});
-```
-
-### 按条件筛选（收藏列表）
-
-```typescript
-// 获取所有收藏的穿搭，按更新时间倒序
 const favorites = await prisma.outfit.findMany({
-  where: { isFavorite: true },
+  where: { isFavorite: true, userId: user.userId },
   orderBy: { updatedAt: "desc" },
 });
 ```
 
 ---
 
-## 六、常用运维命令
+## 七、常用运维命令
 
 所有命令在 `web/` 目录下执行。
 
@@ -670,11 +791,12 @@ npx prisma studio
 sqlite3 dev.db
 
 # 常用 SQLite 查询
-sqlite3 dev.db "SELECT id, name, category FROM Item;"
-sqlite3 dev.db "SELECT id, name, isDefault FROM PersonImage;"
-sqlite3 dev.db "SELECT id, personImageId, topItemId, isFavorite FROM Outfit;"
+sqlite3 dev.db "SELECT id, email, nickname FROM User;"
+sqlite3 dev.db "SELECT id, userId, name, category FROM Item;"
+sqlite3 dev.db "SELECT id, userId, name, isDefault FROM PersonImage;"
+sqlite3 dev.db "SELECT id, userId, personImageId, topItemId, isFavorite FROM Outfit;"
 sqlite3 dev.db "SELECT id, score, scoreDims FROM Outfit WHERE score IS NOT NULL;"
-sqlite3 dev.db "SELECT id, date, rank, outfitId FROM DailyRecommendation;"
+sqlite3 dev.db "SELECT id, userId, date, rank, outfitId FROM DailyRecommendation;"
 sqlite3 dev.db ".tables"     # 列出所有表
 sqlite3 dev.db ".schema"     # 查看建表语句
 ```

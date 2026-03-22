@@ -7,8 +7,26 @@ datasource db {
   provider = "sqlite"
 }
 
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  nickname     String?
+  avatarPath   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  items                Item[]
+  personImages         PersonImage[]
+  outfits              Outfit[]
+  showcasePosts        ShowcasePost[]
+  dailyRecommendations DailyRecommendation[]
+}
+
 model Item {
   id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name              String
   category          String
   subcategory       String?
@@ -26,20 +44,28 @@ model Item {
   imageHash         String?  /// 原始图片 SHA-256 哈希，用于检测重复上传
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model PersonImage {
   id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name              String
   imagePath         String
   enhancedImagePath String?  /// 美化后的图片路径
   description       String?  /// AI 分析的结构化描述 JSON
   isDefault         Boolean  @default(false)
   createdAt         DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Outfit {
   id              String          @id @default(cuid())
+  userId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   personImageId   String
   topItemId       String?
   bottomItemId    String?
@@ -54,10 +80,13 @@ model Outfit {
   showcasePosts   ShowcasePost[]
 
   @@unique([personImageId, topItemId, bottomItemId])
+  @@index([userId])
 }
 
 model ShowcasePost {
   id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   outfitId   String
   outfit     Outfit   @relation(fields: [outfitId], references: [id], onDelete: Cascade)
   caption    String?
@@ -67,19 +96,22 @@ model ShowcasePost {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  @@index([userId])
   @@index([isPublic, createdAt])
   @@index([isPublic, likes])
 }
 
 model DailyRecommendation {
   id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   date      String
   rank      Int
   outfitId  String
   reason    String?
   createdAt DateTime @default(now())
 
-  @@unique([date, rank])
+  @@unique([userId, date, rank])
 }
 
 /// 天气数据缓存（按小时+城市，30天自动过期）

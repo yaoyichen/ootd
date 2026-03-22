@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/api-auth";
 
 const DEFAULT_LIMIT = 5;
 
@@ -60,6 +61,9 @@ async function enrichOutfits(outfits: OutfitRow[], reason: string) {
 }
 
 export async function GET(req: NextRequest) {
+  const { user, error } = await requireAuth(req);
+  if (error) return error;
+
   try {
     const sp = req.nextUrl.searchParams;
     const excludeRaw = sp.get("excludeIds") || "";
@@ -77,6 +81,7 @@ export async function GET(req: NextRequest) {
     // ---------- Layer 1: DailyRecommendation ----------
     const dailyRecs = await prisma.dailyRecommendation.findMany({
       where: {
+        userId: user.userId,
         date: dateKey,
         ...(usedIds.size > 0 ? { outfitId: { notIn: Array.from(usedIds) } } : {}),
       },
@@ -113,7 +118,8 @@ export async function GET(req: NextRequest) {
         `SELECT o.id, o.resultImagePath, o.score, o.scoreDims, o.evaluation, o.isFavorite,
                 o.topItemId, o.bottomItemId
          FROM Outfit o
-         WHERE o.score >= 75
+         WHERE o.userId = '${user.userId}'
+           AND o.score >= 75
            AND o.resultImagePath IS NOT NULL
            ${usedIds.size > 0 ? `AND o.id NOT IN (${Array.from(usedIds).map((id) => `'${id}'`).join(",")})` : ""}
            AND (
@@ -139,6 +145,7 @@ export async function GET(req: NextRequest) {
     if (results.length < limit) {
       const highScoreOutfits = await prisma.outfit.findMany({
         where: {
+          userId: user.userId,
           score: { gte: 70 },
           resultImagePath: { not: "" },
           id: { notIn: Array.from(usedIds) },
@@ -157,6 +164,7 @@ export async function GET(req: NextRequest) {
     if (results.length < limit) {
       const cachedOutfits = await prisma.outfit.findMany({
         where: {
+          userId: user.userId,
           resultImagePath: { not: "" },
           id: { notIn: Array.from(usedIds) },
         },

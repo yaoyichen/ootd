@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { scoreOutfit } from "@/lib/qwen";
+import { requireAuth } from "@/lib/api-auth";
 
 export async function POST(req: NextRequest) {
+  const { user, error } = await requireAuth(req);
+  if (error) return error;
+
   try {
     const body = await req.json().catch(() => ({}));
     const date =
       (body.date as string) || new Date().toISOString().slice(0, 10);
 
     const recs = await prisma.dailyRecommendation.findMany({
-      where: { date },
+      where: { date, userId: user.userId },
       orderBy: { rank: "asc" },
     });
 
