@@ -48,6 +48,7 @@ export async function GET(req: NextRequest) {
           id: post.id,
           outfitId: post.outfitId,
           caption: post.caption,
+          realPhotoPath: post.realPhotoPath,
           likes: post.likes,
           tryonCount: post.tryonCount,
           createdAt: post.createdAt,
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest) {
   if (error) return error;
 
   const body = await req.json();
-  const { outfitId, caption } = body;
+  const { outfitId, caption, realPhotoPath } = body;
 
   if (!outfitId) {
     return NextResponse.json({ error: "outfitId is required" }, { status: 400 });
@@ -98,6 +99,7 @@ export async function POST(req: NextRequest) {
     data: {
       outfitId,
       caption: caption || null,
+      realPhotoPath: realPhotoPath || null,
       userId: user.userId,
     },
   });

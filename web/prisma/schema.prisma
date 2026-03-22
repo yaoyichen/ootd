@@ -21,6 +21,7 @@ model User {
   outfits              Outfit[]
   showcasePosts        ShowcasePost[]
   dailyRecommendations DailyRecommendation[]
+  ootdCheckins         OotdCheckin[]
 }
 
 model Item {
@@ -78,6 +79,7 @@ model Outfit {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   showcasePosts   ShowcasePost[]
+  ootdCheckins    OotdCheckin[]
 
   @@unique([personImageId, topItemId, bottomItemId])
   @@index([userId])
@@ -93,6 +95,7 @@ model ShowcasePost {
   likes      Int      @default(0)
   tryonCount Int      @default(0)
   isPublic   Boolean  @default(true)
+  realPhotoPath String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -125,4 +128,19 @@ model WeatherCache {
 
   @@unique([locationId, hourKey])
   @@index([expiresAt])
+}
+
+model OotdCheckin {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  outfitId      String?
+  outfit        Outfit?  @relation(fields: [outfitId], references: [id])
+  realPhotoPath String
+  caption       String?
+  isPublic      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, createdAt])
 }

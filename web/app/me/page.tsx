@@ -84,15 +84,21 @@ export default function MePage() {
 
           {/* Menu items */}
           <div className="glass rounded-2xl overflow-hidden">
-            <MenuItem href="/favorites" label="我的收藏" icon={
+            <MenuItem href="/favorites" label="我的最爱" icon={
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E8A0B0" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
               </svg>
             } />
-            <MenuItem href="/persons" label="人像管理" icon={
+            <MenuItem href="/persons" label="我的形象" icon={
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E8A0B0" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="8" r="4" />
                 <path d="M6 21v-2a6 6 0 0 1 12 0v2" />
+              </svg>
+            } />
+            <MenuItem href="/ootd" label="穿搭打卡" icon={
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E8A0B0" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
               </svg>
             } />
             <MenuItem href="/wardrobe" label="我的衣橱" icon={
@@ -108,7 +114,7 @@ export default function MePage() {
             onClick={logout}
             className="w-full py-3.5 rounded-2xl text-sm font-semibold transition-colors glass text-accent"
           >
-            退出登录
+            退出
           </button>
         </div>
       </div>

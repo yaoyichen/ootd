@@ -289,7 +289,7 @@ function AddItemForm() {
               <path d="M15 18l-6-6 6-6" />
             </svg>
           </button>
-          <h1 className="text-2xl font-bold text-primary">添加单品</h1>
+          <h1 className="text-2xl font-bold text-primary">添新衣服</h1>
         </div>
 
         {/* 3-dot progress indicator */}
@@ -406,7 +406,7 @@ function AddItemForm() {
                             <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 16 16">
                               <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="28 10" strokeLinecap="round" />
                             </svg>
-                            AI 识别中...
+                            识别中...
                           </span>
                         </div>
                       )}
@@ -419,8 +419,8 @@ function AddItemForm() {
                           <path d="M3 15v1a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4v-1" />
                         </svg>
                       </div>
-                      <p className="text-sm font-medium text-primary">点击上传单品图片</p>
-                      <p className="text-xs text-muted">点击选择 / 拖拽 / 粘贴图片</p>
+                      <p className="text-sm font-medium text-primary">拍一张你的宝贝</p>
+                      <p className="text-xs text-muted">点击、拖拽、粘贴都可以</p>
                     </div>
                   )}
                   <input
@@ -510,13 +510,13 @@ function AddItemForm() {
                   disabled={!canSave}
                   className="flex-1 py-3 rounded-full text-sm font-semibold chip-inactive"
                 >
-                  跳过详情直接保存
+                  直接保存
                 </button>
                 <button
                   onClick={() => setStep(3)}
                   className="flex-1 py-3 rounded-full text-sm font-semibold btn-gradient"
                 >
-                  继续填写
+                  补充详情
                 </button>
               </div>
             </div>
@@ -645,9 +645,9 @@ function AddItemForm() {
                       <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" strokeWidth="3" fill="none" />
                       <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round" fill="none" />
                     </svg>
-                    去背景 & 保存中...
+                    处理中...
                   </span>
-                ) : "保存到衣橱"}
+                ) : "放进衣橱 ✦"}
               </button>
             </div>
           )}
@@ -665,7 +665,7 @@ function AddItemForm() {
               </svg>
             </div>
             <p className="text-base font-semibold text-center text-primary">
-              这件衣服好像已经在衣橱里了
+              这件好像已经有了
             </p>
             <div className="flex items-center gap-3 p-3 rounded-2xl w-full bg-subtle">
               <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-subtle">
@@ -691,7 +691,7 @@ function AddItemForm() {
                 className="flex-1 py-3 rounded-full text-sm font-medium text-white"
                 style={{ background: "linear-gradient(135deg, #E8A0B0, #D4A0C8)" }}
               >
-                仍然添加
+                再添一件
               </button>
             </div>
           </div>

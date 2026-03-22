@@ -90,7 +90,7 @@ export default function WardrobePage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <p className="text-[10px] tracking-[0.25em] uppercase" style={{ color: "rgba(255,255,255,0.25)" }}>WARDROBE</p>
+            <p className="text-[10px] tracking-[0.25em] uppercase" style={{ color: "rgba(255,255,255,0.25)" }}>MY CLOSET</p>
             <h1 className="text-2xl font-light text-primary">我的衣橱</h1>
             <p className="mt-1 text-sm text-secondary">
               {items.length} 件单品
@@ -103,7 +103,7 @@ export default function WardrobePage() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
               <path d="M12 5v14m-7-7h14" />
             </svg>
-            添加单品
+            + 新衣服
           </Link>
         </div>
 
@@ -137,8 +137,8 @@ export default function WardrobePage() {
                 <line x1="12" y1="2" x2="12" y2="22" />
               </svg>
             }
-            message="衣橱还是空的，添加你的第一件单品吧"
-            actionLabel="添加单品"
+            message="衣橱空空的，快来添一件宝贝吧"
+            actionLabel="开始添衣服"
             actionHref={activeCategory ? `/wardrobe/add?category=${activeCategory}` : "/wardrobe/add"}
           />
         ) : (

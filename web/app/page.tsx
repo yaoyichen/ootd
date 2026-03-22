@@ -7,16 +7,18 @@ import { ScoreBadge } from "./components/ScoreBadge";
 
 interface RecentOutfit {
   id: string;
-  imagePath: string;
+  resultImagePath: string;
   score: number | null;
 }
 
 interface ShowcasePost {
   id: string;
-  outfitImagePath: string;
-  authorName: string;
-  score: number | null;
-  likesCount: number;
+  outfit: {
+    resultImagePath: string;
+    score: number | null;
+  };
+  likes: number;
+  caption: string | null;
 }
 
 export default function Home() {
@@ -26,13 +28,17 @@ export default function Home() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/outfits?favorites=true&limit=5")
-        .then((r) => r.json())
-        .then((data) => setRecentOutfits(Array.isArray(data) ? data.slice(0, 5) : []))
+      fetch("/api/outfits?favorites=true&limit=6")
+        .then((r) => r.ok ? r.json() : [])
+        .then((data) => setRecentOutfits(
+          Array.isArray(data) ? data.filter((o: RecentOutfit) => o.resultImagePath).slice(0, 6) : []
+        ))
         .catch(() => {}),
       fetch("/api/showcase?limit=6")
-        .then((r) => r.json())
-        .then((data) => setShowcasePosts(Array.isArray(data) ? data.slice(0, 6) : []))
+        .then((r) => r.ok ? r.json() : [])
+        .then((data) => setShowcasePosts(
+          Array.isArray(data) ? data.filter((p: ShowcasePost) => p.outfit?.resultImagePath).slice(0, 6) : []
+        ))
         .catch(() => {}),
     ]).finally(() => setLoaded(true));
   }, []);
@@ -63,7 +69,7 @@ export default function Home() {
         <div className="relative z-10 px-6 pb-16 max-w-6xl mx-auto w-full">
           <div className="animate-slide-up">
             <p className="text-xs tracking-[0.3em] uppercase text-white/40 mb-4 font-medium">
-              Your AI Style Companion
+              Your Digital Closet
             </p>
             <h1 className="text-[clamp(3rem,8vw,6rem)] font-extralight leading-[0.9] tracking-tight mb-6">
               <span className="block">今天，</span>
@@ -76,8 +82,8 @@ export default function Home() {
               </span>
             </h1>
             <p className="text-white/35 text-sm sm:text-base max-w-md leading-relaxed font-light">
-              AI 理解你的风格，从衣橱中智能搭配，<br className="hidden sm:block" />
-              让每一天都成为你的时尚杂志封面
+              懂你的风格，从衣橱里挑出最搭的，<br className="hidden sm:block" />
+              让每一天都是杂志封面
             </p>
           </div>
 
@@ -90,13 +96,13 @@ export default function Home() {
                 background: "linear-gradient(135deg, rgba(200,120,140,0.9), rgba(180,140,200,0.9))",
               }}
             >
-              <span className="relative z-10">AI 虚拟试穿</span>
+              <span className="relative z-10">一键试穿</span>
             </Link>
             <Link
               href="/recommendations"
               className="px-8 py-3.5 rounded-full text-sm font-medium border border-white/15 text-white/70 hover:text-white hover:border-white/30 hover:bg-white/5 transition-all duration-300"
             >
-              今日穿搭推荐
+              今天穿什么
             </Link>
           </div>
         </div>
@@ -109,7 +115,7 @@ export default function Home() {
 
       {/* ── Navigation Grid ──────────────────── */}
       <section className="px-6 py-16 max-w-6xl mx-auto">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {[
             { href: "/wardrobe", label: "衣橱", sub: "管理单品", icon: (
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
@@ -135,6 +141,12 @@ export default function Home() {
                 <rect x="14" y="3" width="7" height="7" rx="1.5" />
                 <rect x="3" y="14" width="7" height="7" rx="1.5" />
                 <rect x="14" y="14" width="7" height="7" rx="1.5" />
+              </svg>
+            )},
+            { href: "/ootd", label: "打卡", sub: "每日穿搭", icon: (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
               </svg>
             )},
           ].map((item) => (
@@ -165,22 +177,19 @@ export default function Home() {
               查看全部 →
             </Link>
           </div>
-          <div
-            className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory"
-            style={{ scrollbarWidth: "none" }}
-          >
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {recentOutfits.map((outfit, i) => (
               <Link
                 key={outfit.id}
                 href="/favorites"
-                className="flex-shrink-0 w-[140px] sm:w-[160px] group snap-start"
+                className="group"
               >
                 <div
                   className="relative rounded-2xl overflow-hidden bg-white/5 border border-white/[0.06] group-hover:border-white/[0.15] transition-all duration-500"
                   style={{ aspectRatio: "3/4" }}
                 >
                   <Image
-                    src={outfit.imagePath}
+                    src={outfit.resultImagePath}
                     alt="穿搭"
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-700"
@@ -222,22 +231,24 @@ export default function Home() {
                 style={{ aspectRatio: "3/4" }}
               >
                 <Image
-                  src={post.outfitImagePath}
+                  src={post.outfit.resultImagePath}
                   alt="穿搭"
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                 <div className="absolute bottom-0 inset-x-0 p-4">
-                  <p className="text-[11px] text-white/50 font-light">{post.authorName}</p>
+                  {post.caption && (
+                    <p className="text-[11px] text-white/50 font-light line-clamp-1">{post.caption}</p>
+                  )}
                   <div className="flex items-center justify-between mt-1">
                     <span className="text-[10px] text-white/30">
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="inline mr-1 -mt-0.5">
                         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
                       </svg>
-                      {post.likesCount}
+                      {post.likes}
                     </span>
-                    {post.score && <ScoreBadge score={post.score} size="sm" />}
+                    {post.outfit.score && <ScoreBadge score={post.outfit.score} size="sm" />}
                   </div>
                 </div>
               </Link>
@@ -252,7 +263,7 @@ export default function Home() {
           <div className="py-16 border border-white/[0.06] rounded-3xl bg-white/[0.02]">
             <p className="text-white/30 text-sm font-light mb-4">衣橱空空如也</p>
             <p className="text-white/15 text-xs mb-8 leading-relaxed">
-              上传你的第一件单品，开始 AI 穿搭之旅
+              上传你的第一件宝贝，开启每日穿搭灵感
             </p>
             <Link
               href="/wardrobe/add"
@@ -270,7 +281,7 @@ export default function Home() {
       {/* ── Footer ───────────────────────────── */}
       <footer className="px-6 pb-24 text-center">
         <p className="text-[10px] text-white/15 tracking-[0.2em] uppercase font-light">
-          OOTD &mdash; AI Powered Styling
+          OOTD &mdash; Dress to Impress
         </p>
       </footer>
     </div>

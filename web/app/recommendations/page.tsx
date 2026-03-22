@@ -74,12 +74,12 @@ function getWeatherIcon(text: string): string {
 }
 
 const OCCASIONS = [
-  { id: "date", label: "约会甜蜜", icon: "❤️", gradient: "linear-gradient(135deg, #E8A0B0, #C084FC)" },
-  { id: "work", label: "职场通勤", icon: "💼", gradient: "linear-gradient(135deg, #8E8E93, #5B9BD5)" },
-  { id: "friends", label: "闺蜜聚会", icon: "✨", gradient: "linear-gradient(135deg, #FF9F43, #E8A0B0)" },
-  { id: "casual", label: "周末逛街", icon: "🛍️", gradient: "linear-gradient(135deg, #7BC67E, #5BB8C4)" },
-  { id: "sport", label: "健身运动", icon: "🏃", gradient: "linear-gradient(135deg, #5B9BD5, #C084FC)" },
-  { id: "formal", label: "正式场合", icon: "👔", gradient: "linear-gradient(135deg, #636366, #48484A)" },
+  { id: "date", label: "约会", gradient: "linear-gradient(135deg, #E8A0B0, #C084FC)" },
+  { id: "work", label: "通勤", gradient: "linear-gradient(135deg, #8E8E93, #5B9BD5)" },
+  { id: "friends", label: "聚会", gradient: "linear-gradient(135deg, #FF9F43, #E8A0B0)" },
+  { id: "casual", label: "休闲", gradient: "linear-gradient(135deg, #7BC67E, #5BB8C4)" },
+  { id: "sport", label: "运动", gradient: "linear-gradient(135deg, #5B9BD5, #C084FC)" },
+  { id: "formal", label: "正式", gradient: "linear-gradient(135deg, #636366, #48484A)" },
 ] as const;
 
 /** 中午 12 点前默认"今天"(0)，12 点后默认"明天"(1) */
@@ -258,7 +258,7 @@ function WeatherCard({
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="搜索城市..."
+                  placeholder="搜城市..."
                   className="flex-1 bg-transparent text-xs outline-none placeholder:text-white/25"
                   style={{ color: "rgba(255,255,255,0.85)" }}
                 />
@@ -278,7 +278,7 @@ function WeatherCard({
             <div className="max-h-48 overflow-y-auto py-1">
               {filteredCities.length === 0 ? (
                 <div className="px-3.5 py-3 text-xs text-center" style={{ color: "rgba(255,255,255,0.25)" }}>
-                  未找到匹配城市
+                  没找到这个城市
                 </div>
               ) : (
                 filteredCities.map((c) => (
@@ -316,7 +316,7 @@ function WeatherCard({
               animation: "spin 0.8s linear infinite",
             }}
           />
-          <span className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>获取天气中...</span>
+          <span className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>看看天气...</span>
         </div>
       ) : forecasts.length > 0 ? (
         <>
@@ -415,7 +415,7 @@ function WeatherCard({
         </div>
       ) : (
         <div className="py-2">
-          <span className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>天气数据暂不可用</span>
+          <span className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>天气暂时看不了</span>
         </div>
       )}
 
@@ -784,7 +784,7 @@ export default function RecommendationsPage() {
     if (!selectedPerson) return;
 
     setPhase("matching");
-    setProgressMsg("正在启动推荐引擎...");
+    setProgressMsg("正在翻你的衣橱...");
     setProgressDetail({});
     setError(null);
     setRecommendations([]);
@@ -983,15 +983,15 @@ export default function RecommendationsPage() {
       <main className="relative z-10 max-w-5xl mx-auto px-6 pt-8 pb-20">
         {/* Header */}
         <div className="text-center mb-6">
-          <p className="text-[10px] tracking-[0.25em] uppercase" style={{ color: "rgba(255,255,255,0.25)" }}>RECOMMENDATIONS</p>
+          <p className="text-[10px] tracking-[0.25em] uppercase" style={{ color: "rgba(255,255,255,0.25)" }}>DAILY LOOK</p>
           <h1 className="text-2xl font-light text-primary">
             <span className="gradient-text">{targetDayLabel}</span>
-            {" "}穿搭推荐
+            {" "}穿什么
           </h1>
           <p className="mt-2 text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
             {targetDay === 0
-              ? "AI 从你的衣橱中智能搭配，精选最佳方案"
-              : `根据${targetDayLabel}天气预报，提前为你准备穿搭`}
+              ? "从你的衣橱里挑出今天最搭的组合"
+              : `根据${targetDayLabel}天气，提前帮你搭好`}
           </p>
         </div>
 
@@ -1046,7 +1046,7 @@ export default function RecommendationsPage() {
         {phase !== "loading" && (
           <div className="mb-6">
             <div
-              className="flex gap-2.5 overflow-x-auto pb-2"
+              className="flex gap-2 overflow-x-auto pb-2"
               style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
               <style>{`.occasion-scroll::-webkit-scrollbar { display: none; }`}</style>
@@ -1057,19 +1057,18 @@ export default function RecommendationsPage() {
                     key={o.id}
                     onClick={() => !isProcessing && setSelectedOccasion(selected ? null : o.id)}
                     disabled={isProcessing}
-                    className="occasion-scroll flex-shrink-0 rounded-2xl px-4 py-3 flex items-center gap-1.5 transition-all duration-200 touch-target"
+                    className="occasion-scroll flex-shrink-0 rounded-full px-5 py-2 text-xs font-medium tracking-wide transition-all duration-200 touch-target"
                     style={{
-                      background: selected ? o.gradient : "rgba(255,255,255,0.03)",
-                      color: selected ? "#fff" : "rgba(255,255,255,0.7)",
-                      boxShadow: selected ? "0 4px 14px rgba(232,160,176,0.3)" : "none",
+                      background: selected ? o.gradient : "rgba(255,255,255,0.04)",
+                      color: selected ? "#fff" : "rgba(255,255,255,0.45)",
+                      border: selected ? "none" : "1px solid rgba(255,255,255,0.06)",
                       cursor: isProcessing ? "not-allowed" : "pointer",
                       opacity: isProcessing ? 0.6 : 1,
                       fontWeight: selected ? 600 : 400,
-                      fontSize: "0.875rem",
+                      letterSpacing: "0.05em",
                     }}
                   >
-                    <span>{o.icon}</span>
-                    <span>{o.label}</span>
+                    {o.label}
                   </button>
                 );
               })}
@@ -1142,7 +1141,7 @@ export default function RecommendationsPage() {
                   />
                 </div>
                 <div className="flex justify-between mt-1.5">
-                  {["匹配单品", "生成穿搭", "AI 评分"].map((label, i) => {
+                  {["翻衣橱", "试穿中", "打分"].map((label, i) => {
                     const phases: Phase[] = [
                       "matching",
                       "generating",
@@ -1193,12 +1192,12 @@ export default function RecommendationsPage() {
               <p
                 className="text-sm font-medium text-primary"
               >
-                {targetDayLabel}还没有穿搭推荐
+                {targetDayLabel}还没搭配过
               </p>
               <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.25)" }}>
                 {targetDay === 0
-                  ? "AI 将从你的衣橱中智能匹配，生成 3 套最佳穿搭"
-                  : `根据${targetDayLabel}天气预报，提前智能搭配 3 套穿搭`}
+                  ? "从衣橱里帮你挑 3 套最搭的 look"
+                  : `根据${targetDayLabel}天气，提前搭好 3 套 look`}
               </p>
             </div>
 
@@ -1211,7 +1210,7 @@ export default function RecommendationsPage() {
                   boxShadow: "0 4px 16px rgba(232,160,176,0.25)",
                 }}
               >
-                先上传人像
+                先上传照片
               </a>
             ) : (
               <div className="flex flex-col items-center gap-3">
@@ -1220,7 +1219,7 @@ export default function RecommendationsPage() {
                   disabled={!selectedPerson}
                   className="btn-gradient px-8 py-3.5 rounded-full text-sm font-semibold tracking-wide"
                 >
-                  生成{targetDayLabel}推荐
+                  帮我搭 ✦
                 </button>
                 <button
                   onClick={handleQuickOutfit}
@@ -1240,7 +1239,7 @@ export default function RecommendationsPage() {
                       </svg>
                       加载中...
                     </span>
-                  ) : "Surprise Me"}
+                  ) : "随机来一套"}
                 </button>
               </div>
             )}
@@ -1317,7 +1316,7 @@ export default function RecommendationsPage() {
                     <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" style={{ animation: "spin 0.8s linear infinite" }}>
                       <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="28 10" strokeLinecap="round" />
                     </svg>
-                    正在重新打分...
+                    重新打分中...
                   </span>
                 ) : "重新打分"}
               </button>
@@ -1331,7 +1330,7 @@ export default function RecommendationsPage() {
                   border: "1px solid rgba(255,255,255,0.06)",
                 }}
               >
-                重新推荐
+                换一批
               </button>
               <button
                 onClick={handleQuickOutfit}
@@ -1343,7 +1342,7 @@ export default function RecommendationsPage() {
                   border: "1px solid rgba(232,160,176,0.15)",
                 }}
               >
-                Surprise Me
+                随机来一套
               </button>
             </div>
           </>

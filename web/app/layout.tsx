@@ -13,8 +13,8 @@ const plusJakarta = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "OOTD — AI 虚拟试穿",
-  description: "上传人像和单品，AI 生成你穿上效果图",
+  title: "OOTD — 你的智能穿搭衣橱",
+  description: "上传单品和照片，一键生成穿搭效果图，每天都有新 look",
 };
 
 export default function RootLayout({

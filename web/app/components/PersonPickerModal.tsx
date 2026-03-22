@@ -38,7 +38,7 @@ export function PersonPickerModal({
         }}
       >
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-primary">选择人像</h3>
+          <h3 className="text-lg font-bold text-primary">选一张照片</h3>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full flex items-center justify-center"
@@ -59,7 +59,7 @@ export function PersonPickerModal({
         </div>
         {persons.length === 0 ? (
           <p className="text-sm py-10 text-center text-muted">
-            暂无人像，请先到人像管理上传
+            还没有照片，先去上传一张吧
           </p>
         ) : (
           <div className="grid grid-cols-3 gap-3 overflow-y-auto">

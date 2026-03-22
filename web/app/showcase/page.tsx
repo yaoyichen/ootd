@@ -27,6 +27,7 @@ interface ShowcasePost {
   likes: number;
   tryonCount: number;
   createdAt: string;
+  realPhotoPath?: string | null;
   outfit: {
     resultImagePath: string;
     score: number | null;
@@ -56,8 +57,8 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 const SORT_TABS: { key: SortMode; label: string }[] = [
   { key: "newest", label: "最新" },
-  { key: "hottest", label: "最热" },
-  { key: "random", label: "随机发现" },
+  { key: "hottest", label: "最火" },
+  { key: "random", label: "随便逛逛" },
 ];
 
 export default function ShowcasePage() {
@@ -237,7 +238,7 @@ export default function ShowcasePage() {
         toast.error(data.error || "添加失败");
         return;
       }
-      toast.success("已加入我的衣橱");
+      toast.success("已加入衣橱");
       setSelectedItem(null);
     } catch {
       toast.error("网络错误");
@@ -332,7 +333,7 @@ export default function ShowcasePage() {
                       <circle cx="12" cy="12" r="10" stroke="rgba(232,160,176,0.2)" strokeWidth="2.5" fill="none" />
                       <path d="M12 2a10 10 0 0 1 10 10" stroke="#E8A0B0" strokeWidth="2.5" strokeLinecap="round" fill="none" />
                     </svg>
-                    <span className="text-sm font-medium text-accent">AI 评分中...</span>
+                    <span className="text-sm font-medium text-accent">打分中...</span>
                   </div>
                 ) : tryonResult.score !== null ? (
                   <div className="flex items-start gap-4">
@@ -358,7 +359,7 @@ export default function ShowcasePage() {
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold mb-1 text-primary">AI 穿搭评分</p>
+                      <p className="text-xs font-semibold mb-1 text-primary">穿搭评分</p>
                       {tryonResult.evaluation && (
                         <p className="text-xs leading-relaxed text-secondary" dangerouslySetInnerHTML={{ __html: tryonResult.evaluation }} />
                       )}
@@ -373,7 +374,7 @@ export default function ShowcasePage() {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8A0B0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z" />
                     </svg>
-                    AI 评分
+                    查看评分
                   </button>
                 )}
               </div>
@@ -405,7 +406,7 @@ export default function ShowcasePage() {
                           color: addedItemIds.has(tryonResult.sourcePost.topItem.id) ? "#34C759" : "#fff",
                         }}
                       >
-                        {addedItemIds.has(tryonResult.sourcePost.topItem.id) ? "已加入" : "加衣橱"}
+                        {addedItemIds.has(tryonResult.sourcePost.topItem.id) ? "已收" : "收了"}
                       </button>
                     </div>
                   )}
@@ -432,7 +433,7 @@ export default function ShowcasePage() {
                           color: addedItemIds.has(tryonResult.sourcePost.bottomItem.id) ? "#34C759" : "#fff",
                         }}
                       >
-                        {addedItemIds.has(tryonResult.sourcePost.bottomItem.id) ? "已加入" : "加衣橱"}
+                        {addedItemIds.has(tryonResult.sourcePost.bottomItem.id) ? "已收" : "收了"}
                       </button>
                     </div>
                   )}
@@ -499,7 +500,7 @@ export default function ShowcasePage() {
                     opacity: copyingItem ? 0.7 : 1,
                   }}
                 >
-                  {copyingItem ? "添加中..." : "加入我的衣橱"}
+                  {copyingItem ? "添加中..." : "收进我的衣橱"}
                 </button>
                 <button
                   onClick={() => setSelectedItem(null)}
@@ -528,8 +529,8 @@ export default function ShowcasePage() {
               <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(232,160,176,0.12)" strokeWidth="3" />
               <circle cx="24" cy="24" r="20" fill="none" stroke="url(#scg)" strokeWidth="3" strokeLinecap="round" strokeDasharray="90 126" />
             </svg>
-            <p className="text-sm font-medium text-primary">AI 试穿生成中...</p>
-            <p className="text-xs text-muted">通常需要 10-30 秒</p>
+            <p className="text-sm font-medium text-primary">魔法生成中...</p>
+            <p className="text-xs text-muted">大概需要半分钟</p>
           </div>
         </div>
       )}
@@ -537,12 +538,12 @@ export default function ShowcasePage() {
       <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-24">
         {/* Header */}
         <div className="text-center mb-6">
-          <p className="text-[10px] tracking-[0.25em] uppercase" style={{ color: "rgba(255,255,255,0.25)" }}>SHOWCASE</p>
+          <p className="text-[10px] tracking-[0.25em] uppercase" style={{ color: "rgba(255,255,255,0.25)" }}>EXPLORE</p>
           <h1 className="text-2xl font-light text-primary">
-            <span className="gradient-text">穿搭广场</span>
+            <span className="gradient-text">穿搭灵感</span>
           </h1>
           <p className="mt-2 text-sm text-secondary">
-            发现精彩穿搭，一键试穿同款
+            看看大家都在穿什么 ✦
           </p>
         </div>
 
@@ -596,7 +597,7 @@ export default function ShowcasePage() {
                 <rect x="14" y="14" width="7" height="7" rx="1.5" />
               </svg>
             </div>
-            <p className="text-base font-medium text-primary">广场还没有穿搭</p>
+            <p className="text-base font-medium text-primary">这里还空空的～</p>
             <p className="text-sm mt-2 text-muted">
               去
               <a href="/favorites" className="font-semibold text-accent"> 收藏页 </a>
@@ -668,6 +669,20 @@ function ShowcaseCard({
             {post.outfit.score}分
           </div>
         )}
+
+        {/* Real photo badge */}
+        {post.realPhotoPath && (
+          <div
+            className="absolute top-2 left-2 px-2 py-1 rounded-full text-[10px] font-bold"
+            style={{
+              background: "rgba(52,199,89,0.85)",
+              color: "#fff",
+              backdropFilter: "blur(8px)",
+            }}
+          >
+            真实穿搭
+          </div>
+        )}
       </div>
 
       <div className="p-3">
@@ -731,7 +746,7 @@ function ShowcaseCard({
               boxShadow: "0 2px 8px rgba(232,160,176,0.25)",
             }}
           >
-            试穿同款
+            我也试试
           </button>
         </div>
       </div>

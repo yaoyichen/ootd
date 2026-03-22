@@ -55,10 +55,11 @@ function Picker({
   useModalKeyboard({ isOpen: true, onClose });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" role="dialog" aria-modal="true" onClick={onClose}>
       <div
-        className="w-full max-w-lg mx-4 mb-4 sm:mb-0 rounded-3xl p-6 flex flex-col gap-4 max-h-[80vh]"
+        className="w-full max-w-lg mx-4 rounded-3xl p-6 flex flex-col gap-4 max-h-[80vh]"
         style={{ background: "rgba(20,20,22,0.95)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.06)" }}
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-bold text-primary">{title}</h3>
@@ -74,7 +75,7 @@ function Picker({
         </div>
         {items.length === 0 ? (
           <p className="text-sm py-10 text-center" style={{ color: "rgba(255,255,255,0.25)" }}>
-            暂无可选项，请先添加
+            还没有可选的呢～
           </p>
         ) : (
           <div className="grid grid-cols-3 gap-3 overflow-y-auto">
@@ -113,12 +114,14 @@ function SelectCard({
   selectedImage,
   selectedName,
   onClick,
+  ratio = "3/4",
 }: {
   label: string;
   hint: string;
   selectedImage: string | null;
   selectedName: string | null;
   onClick: () => void;
+  ratio?: string;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -126,7 +129,7 @@ function SelectCard({
       <button
         onClick={onClick}
         className="glass relative rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] card-hover"
-        style={{ aspectRatio: "3/4" }}
+        style={{ aspectRatio: ratio }}
       >
         {selectedImage ? (
           <>
@@ -268,7 +271,7 @@ export default function TryonPage() {
 
       if (!res.ok || data.error) {
         setStatus("failed");
-        setError(data.error || "生成失败，请重试");
+        setError(data.error || "生成失败了，再试一次？");
         return;
       }
 
@@ -283,7 +286,7 @@ export default function TryonPage() {
       }
     } catch {
       setStatus("failed");
-      setError("网络错误，请重试");
+      setError("网络开小差了，再试一次？");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPerson, selectedTop, selectedBottom, persons, items]);
@@ -434,40 +437,45 @@ export default function TryonPage() {
 
       <main className="relative z-10 max-w-6xl mx-auto px-6 pt-8 pb-20">
         <div className="text-center mb-10">
-          <p className="text-[10px] tracking-[0.25em] uppercase" style={{ color: "rgba(255,255,255,0.25)" }}>VIRTUAL TRY-ON</p>
+          <p className="text-[10px] tracking-[0.25em] uppercase" style={{ color: "rgba(255,255,255,0.25)" }}>TRY IT ON</p>
           <h1 className="text-2xl font-light text-primary">
-            <span className="gradient-text">AI</span> 虚拟试穿
+            魔法试衣间
           </h1>
           <p className="mt-2 text-sm text-secondary">
-            从衣橱中选择服装，即刻预览穿搭效果
+            选好衣服和照片，看看穿上什么效果 ✦
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.1fr] gap-10 items-start">
-          <div className="flex flex-col gap-6">
-            <div className="grid grid-cols-3 gap-3">
-              <SelectCard
-                label="人像"
-                hint="从人像库选择"
-                selectedImage={personData?.imagePath ?? null}
-                selectedName={personData?.name ?? null}
-                onClick={() => setPicker("person")}
-              />
-              <SelectCard
-                label="上衣"
-                hint="从衣橱选择"
-                selectedImage={topData?.imagePath ?? null}
-                selectedName={topData?.name ?? null}
-                onClick={() => setPicker("top")}
-              />
-              <SelectCard
-                label="下装"
-                hint="从衣橱选择"
-                selectedImage={bottomData?.imagePath ?? null}
-                selectedName={bottomData?.name ?? null}
-                onClick={() => setPicker("bottom")}
-              />
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_0.6fr_1.4fr] gap-6 items-start">
+          {/* Column 1: Person */}
+          <div className="flex flex-col gap-3">
+            <SelectCard
+              label="照片"
+              hint="选一张照片"
+              selectedImage={personData?.imagePath ?? null}
+              selectedName={personData?.name ?? null}
+              onClick={() => setPicker("person")}
+            />
+          </div>
+
+          {/* Column 2: Top + Bottom stacked */}
+          <div className="flex flex-col gap-3">
+            <SelectCard
+              label="上衣"
+              hint="从衣橱选择"
+              selectedImage={topData?.imagePath ?? null}
+              selectedName={topData?.name ?? null}
+              onClick={() => setPicker("top")}
+              ratio="1/1"
+            />
+            <SelectCard
+              label="下装"
+              hint="从衣橱选择"
+              selectedImage={bottomData?.imagePath ?? null}
+              selectedName={bottomData?.name ?? null}
+              onClick={() => setPicker("bottom")}
+              ratio="1/1"
+            />
 
             {isCached && status === "completed" ? (
               <div className="flex gap-3">
@@ -479,7 +487,7 @@ export default function TryonPage() {
                     border: "1px solid rgba(232,160,176,0.15)",
                   }}
                 >
-                  已有穿搭记录
+                  这套搭配试过啦
                 </div>
                 <button
                   onClick={handleRegenerate}
@@ -492,7 +500,7 @@ export default function TryonPage() {
                   onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 24px rgba(232,160,176,0.35)"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 16px rgba(232,160,176,0.25)"; }}
                 >
-                  重新生成
+                  再来一次
                 </button>
               </div>
             ) : (
@@ -507,10 +515,10 @@ export default function TryonPage() {
                       <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" strokeWidth="3" fill="none" />
                       <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round" fill="none" />
                     </svg>
-                    AI 生成中，通常需要 10-30 秒…
+                    魔法生成中，稍等一下下…
                   </span>
                 ) : (
-                  "生成试穿效果"
+                  "开始试穿 ✦"
                 )}
               </button>
             )}
@@ -531,8 +539,8 @@ export default function TryonPage() {
             {!persons.length && (
               <div className="glass rounded-2xl p-5 text-center">
                 <p className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
-                  还没有人像，请先到
-                  <a href="/persons" className="font-semibold" style={{ color: "#E8A0B0" }}> 人像管理 </a>
+                  还没有照片呢，先去
+                  <a href="/persons" className="font-semibold" style={{ color: "#E8A0B0" }}> 上传一张 </a>
                   上传
                 </p>
               </div>
@@ -540,8 +548,8 @@ export default function TryonPage() {
             {!items.length && (
               <div className="glass rounded-2xl p-5 text-center">
                 <p className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
-                  衣橱是空的，请先到
-                  <a href="/wardrobe/add" className="font-semibold" style={{ color: "#E8A0B0" }}> 添加单品 </a>
+                  衣橱空空的，先去
+                  <a href="/wardrobe/add" className="font-semibold" style={{ color: "#E8A0B0" }}> 添几件衣服 </a>
                 </p>
               </div>
             )}
@@ -643,7 +651,7 @@ export default function TryonPage() {
                         onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.3)"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.2)"; }}
                       >
-                        重新生成
+                        再来一次
                       </button>
                     )}
                   </div>
@@ -665,7 +673,7 @@ export default function TryonPage() {
                         </svg>
                       </div>
                       <p className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>
-                        AI 正在生成，请稍候…
+                        施展魔法中…
                       </p>
                     </>
                   ) : (
@@ -681,8 +689,8 @@ export default function TryonPage() {
                         </svg>
                       </div>
                       <div className="text-center">
-                        <p className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>穿搭效果将在这里展示</p>
-                        <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.25)" }}>选择人像与服装后点击生成</p>
+                        <p className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>穿搭效果会出现在这里</p>
+                        <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.25)" }}>选好照片和衣服就可以开始啦</p>
                       </div>
                     </>
                   )}
@@ -717,7 +725,7 @@ export default function TryonPage() {
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold mb-1 text-primary">AI 穿搭评分</p>
+                      <p className="text-xs font-semibold mb-1 text-primary">穿搭评分</p>
                       <p className="text-xs leading-relaxed" style={{ color: "rgba(255,255,255,0.4)" }} dangerouslySetInnerHTML={{ __html: evaluation! }} />
                     </div>
                   </div>
@@ -737,14 +745,14 @@ export default function TryonPage() {
                           <circle cx="12" cy="12" r="10" stroke="rgba(232,160,176,0.2)" strokeWidth="2.5" fill="none" />
                           <path d="M12 2a10 10 0 0 1 10 10" stroke="#E8A0B0" strokeWidth="2.5" strokeLinecap="round" fill="none" />
                         </svg>
-                        AI 评分中...
+                        打分中...
                       </>
                     ) : (
                       <>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8A0B0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z" />
                         </svg>
-                        AI 评分
+                        查看评分
                       </>
                     )}
                   </button>

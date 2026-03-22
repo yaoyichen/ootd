@@ -132,12 +132,12 @@ export default function PersonsPage() {
       body: JSON.stringify({ isDefault: true }),
     });
     fetchPersons();
-    toast.success("已设为默认人像");
+    toast.success("已设为默认");
   };
 
   const handleDelete = async (id: string) => {
     toast.confirm({
-      message: "确定删除这张人像？",
+      message: "确定删掉这张照片？",
       onConfirm: async () => {
         await fetch(`/api/persons/${id}`, { method: "DELETE" });
         fetchPersons();
@@ -150,11 +150,11 @@ export default function PersonsPage() {
 
   return (
     <PageShell>
-      <main className="max-w-4xl mx-auto px-6 pt-8 pb-20 animate-fade-in-up">
+      <main className="max-w-6xl mx-auto px-6 pt-8 pb-20 animate-fade-in-up">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <p className="text-[10px] tracking-[0.25em] uppercase" style={{ color: "rgba(255,255,255,0.25)" }}>PORTRAITS</p>
-            <h1 className="text-2xl font-light text-primary">人像管理</h1>
+            <p className="text-[10px] tracking-[0.25em] uppercase" style={{ color: "rgba(255,255,255,0.25)" }}>MY LOOKS</p>
+            <h1 className="text-2xl font-light text-primary">我的形象</h1>
           </div>
           <button
             onClick={() => inputRef.current?.click()}
@@ -163,7 +163,7 @@ export default function PersonsPage() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
               <path d="M12 5v14m-7-7h14" />
             </svg>
-            上传人像
+            + 新照片
           </button>
           <input
             ref={inputRef}
@@ -185,7 +185,7 @@ export default function PersonsPage() {
             aria-modal="true"
           >
             <div className="glass rounded-3xl p-6 w-full max-w-md mx-4 flex flex-col gap-5" style={{ background: "rgba(20,20,22,0.95)", border: "1px solid rgba(255,255,255,0.06)" }}>
-              <h2 className="text-lg font-bold text-primary">添加人像</h2>
+              <h2 className="text-lg font-bold text-primary">添加照片</h2>
               <div className="rounded-2xl overflow-hidden" style={{ aspectRatio: "3/4" }}>
                 <Image src={preview} alt="Preview" width={400} height={533} className="w-full h-full object-cover" />
               </div>
@@ -193,7 +193,7 @@ export default function PersonsPage() {
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                placeholder="为这张人像起个名字"
+                placeholder="给这张照片起个名"
                 className="input-base"
                 autoFocus
               />
@@ -269,7 +269,7 @@ export default function PersonsPage() {
                   const desc = parseDescription(viewPerson.description);
                   if (!desc) return (
                     <p className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
-                      AI 分析中...上传后需等待几秒
+                      分析中...稍等几秒
                     </p>
                   );
                   return (
@@ -292,7 +292,7 @@ export default function PersonsPage() {
 
         {/* Persons grid */}
         {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 4 }).map((_, i) => (
               <SkeletonCard key={i} />
             ))}
@@ -305,12 +305,12 @@ export default function PersonsPage() {
                 <path d="M6 21v-2a6 6 0 0 1 12 0v2" />
               </svg>
             }
-            message="还没有人像，上传一张全身照开始吧"
-            actionLabel="上传人像"
+            message="还没有照片，上传一张全身照吧"
+            actionLabel="上传照片"
             onAction={() => inputRef.current?.click()}
           />
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {persons.map((p, i) => (
               <div
                 key={p.id}

@@ -6,6 +6,7 @@ import { useToast } from "../components/ToastProvider";
 import { SkeletonOutfitCard } from "../components/Skeleton";
 import { useModalKeyboard } from "../hooks/useModalKeyboard";
 import ShareCardModal from "../components/ShareCardModal";
+import { ComparisonModal } from "../components/ComparisonModal";
 import { PageShell } from "../components/PageShell";
 import { RadarChart } from "../components/RadarChart";
 import { ScoreBadge } from "../components/ScoreBadge";
@@ -55,6 +56,12 @@ export default function FavoritesPage() {
   const [shareOutfit, setShareOutfit] = useState<OutfitRecord | null>(null);
   const [publishedOutfitIds, setPublishedOutfitIds] = useState<Set<string>>(new Set());
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [comparisonData, setComparisonData] = useState<{
+    aiImage: string;
+    realImage: string;
+    score: number | null;
+    outfitId: string;
+  } | null>(null);
   const toast = useToast();
 
   useModalKeyboard({
@@ -195,6 +202,87 @@ export default function FavoritesPage() {
     }
   };
 
+  const handlePhotoCompare = (outfit: OutfitRecord) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.capture = "environment";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      try {
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            if (file.size > 2 * 1024 * 1024) {
+              const img = new window.Image();
+              img.onload = () => {
+                const canvas = document.createElement("canvas");
+                const scale = Math.min(1, 1200 / img.width);
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+                const ctx = canvas.getContext("2d")!;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL("image/jpeg", 0.85));
+              };
+              img.onerror = reject;
+              img.src = result;
+            } else {
+              resolve(result);
+            }
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        const res = await fetch("/api/ootd", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: base64, outfitId: outfit.id }),
+        });
+        if (!res.ok) {
+          toast.error("保存失败");
+          return;
+        }
+        const data = await res.json();
+        setComparisonData({
+          aiImage: outfit.resultImagePath,
+          realImage: data.realPhotoPath,
+          score: outfit.score,
+          outfitId: outfit.id,
+        });
+      } catch {
+        toast.error("操作失败");
+      }
+    };
+    input.click();
+  };
+
+  const handlePublishComparison = async () => {
+    if (!comparisonData) return;
+    try {
+      const res = await fetch("/api/showcase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          outfitId: comparisonData.outfitId,
+          realPhotoPath: comparisonData.realImage,
+          caption: "真实穿搭打卡 ✨",
+        }),
+      });
+      if (res.ok) {
+        toast.success("已分享到广场");
+        setPublishedOutfitIds((prev) => new Set(prev).add(comparisonData.outfitId));
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "分享失败");
+      }
+    } catch {
+      toast.error("网络错误");
+    }
+  };
+
   return (
     <PageShell>
 
@@ -229,9 +317,9 @@ export default function FavoritesPage() {
 
       <main className="relative z-10 max-w-6xl mx-auto px-6 pt-8 pb-20">
         <div className="text-center mb-10">
-          <p className="text-[10px] tracking-[0.25em] uppercase" style={{ color: "rgba(255,255,255,0.25)" }}>FAVORITES</p>
+          <p className="text-[10px] tracking-[0.25em] uppercase" style={{ color: "rgba(255,255,255,0.25)" }}>SAVED</p>
           <h1 className="text-2xl font-light text-primary">
-            <span className="gradient-text">我的收藏</span>
+            <span className="gradient-text">我的最爱</span>
           </h1>
         </div>
 
@@ -251,11 +339,9 @@ export default function FavoritesPage() {
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
               </svg>
             </div>
-            <p className="text-base font-medium text-primary">还没有收藏的穿搭</p>
+            <p className="text-base font-medium text-primary">还没有收藏的 look</p>
             <p className="text-sm mt-2 text-muted">
-              前往
-              <a href="/tryon" className="font-semibold text-accent"> 试穿 </a>
-              生成穿搭并点击收藏
+              试穿后点小心心就可以收藏啦
             </p>
           </div>
         ) : (
@@ -415,6 +501,17 @@ export default function FavoritesPage() {
                         下载
                       </a>
                       <button
+                        onClick={() => handlePhotoCompare(outfit)}
+                        className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ background: "rgba(232,160,176,0.08)" }}
+                        title="拍照对比"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E8A0B0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                          <circle cx="12" cy="13" r="4" />
+                        </svg>
+                      </button>
+                      <button
                         onClick={() => handleScore(outfit.id)}
                         disabled={scoring.has(outfit.id)}
                         className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-colors"
@@ -423,7 +520,7 @@ export default function FavoritesPage() {
                             ? "rgba(232,160,176,0.12)"
                             : "rgba(232,160,176,0.08)",
                         }}
-                        title={outfit.score != null ? "重新打分" : "AI 打分"}
+                        title={outfit.score != null ? "再打一次" : "打分"}
                       >
                         {scoring.has(outfit.id) ? (
                           <svg width="14" height="14" viewBox="0 0 24 24" style={{ animation: "spin 1s linear infinite" }}>
@@ -501,6 +598,17 @@ export default function FavoritesPage() {
           evaluation={shareOutfit.evaluation}
           topItem={getItem(shareOutfit.topItemId) ? { name: getItem(shareOutfit.topItemId)!.name, imagePath: getItem(shareOutfit.topItemId)!.imagePath } : null}
           bottomItem={getItem(shareOutfit.bottomItemId) ? { name: getItem(shareOutfit.bottomItemId)!.name, imagePath: getItem(shareOutfit.bottomItemId)!.imagePath } : null}
+        />
+      )}
+
+      {comparisonData && (
+        <ComparisonModal
+          isOpen={!!comparisonData}
+          onClose={() => setComparisonData(null)}
+          aiImage={comparisonData.aiImage}
+          realImage={comparisonData.realImage}
+          score={comparisonData.score}
+          onPublish={handlePublishComparison}
         />
       )}
     </PageShell>

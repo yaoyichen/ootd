@@ -1,7 +1,7 @@
 # 数据库参考文档
 
 **技术栈**：Prisma 7 + SQLite + better-sqlite3 adapter
-**更新日期**：2026-03-22（v8：新增 User model + 用户认证系统，所有业务表增加 userId 实现数据隔离）
+**更新日期**：2026-03-23（v9：新增 OotdCheckin model + ShowcasePost.realPhotoPath 字段，支持 OOTD 打卡和真实穿搭对比）
 
 ---
 
@@ -136,7 +136,7 @@ if (error) return error; // 401 未登录
 
 **唯一索引**：`email`
 
-**关系**：User 拥有 items、personImages、outfits、showcasePosts、dailyRecommendations（级联删除）
+**关系**：User 拥有 items、personImages、outfits、showcasePosts、dailyRecommendations、ootdCheckins（级联删除）
 
 ### Item（衣物单品）
 
@@ -308,6 +308,7 @@ JSON 字符串，包含五个评分维度（每项 1–100 分）：
 | likes | Int | 是 | 0 | 点赞数 |
 | tryonCount | Int | 是 | 0 | 被试穿次数 |
 | isPublic | Boolean | 是 | true | 是否公开（撤回时设为 false） |
+| realPhotoPath | String? | 否 | — | 真实穿搭照片路径（OOTD 打卡时附带） |
 | createdAt | DateTime | 是 | now() | 创建时间 |
 | updatedAt | DateTime | 是 | 自动更新 | 更新时间 |
 
@@ -320,6 +321,26 @@ JSON 字符串，包含五个评分维度（每项 1–100 分）：
 - `@@index([isPublic, likes])` — 最热排序查询
 
 **隐私保护**：只分享试穿效果图（AI 生成图），不暴露用户原始人像照片。分享后可随时撤回（设 `isPublic = false`），不影响自己的收藏。仅帖子所有者可撤回。
+
+### OotdCheckin（OOTD 每日打卡）
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| id | String | 是 | cuid() 自动生成 | 主键 |
+| userId | String | 是 | — | 所属用户 ID（外键） |
+| outfitId | String? | 否 | — | 关联的 Outfit ID（外键，可选） |
+| realPhotoPath | String | 是 | — | 真实穿搭照片路径（如 `/uploads/ootd/checkin-xxx.png`） |
+| caption | String? | 否 | — | 打卡配文 |
+| isPublic | Boolean | 是 | false | 是否公开（发布到广场时设为 true） |
+| createdAt | DateTime | 是 | now() | 打卡时间 |
+
+**关系**：
+- `user User @relation(fields: [userId], references: [id], onDelete: Cascade)`
+- `outfit Outfit? @relation(fields: [outfitId], references: [id])`
+
+**索引**：
+- `@@index([userId])` — 按用户查询
+- `@@index([userId, createdAt])` — 按月查询打卡记录
 
 ---
 
@@ -604,8 +625,8 @@ if (!item || item.userId !== user.userId) {
 
 | 方法 | 路径 | 说明 | 认证 |
 |------|------|------|------|
-| GET | `/api/showcase` | 获取广场帖子列表 | **公开** |
-| POST | `/api/showcase` | 发布穿搭到广场（需验证 outfit 所有权） | 需要 |
+| GET | `/api/showcase` | 获取广场帖子列表（含 realPhotoPath） | **公开** |
+| POST | `/api/showcase` | 发布穿搭到广场（支持可选 realPhotoPath） | 需要 |
 | DELETE | `/api/showcase/[id]` | 撤回帖子（需验证帖子所有权） | 需要 |
 | POST | `/api/showcase/[id]/like` | 点赞（likes +1） | **公开** |
 | POST | `/api/showcase/[id]/tryon` | 递增试穿计数（tryonCount +1） | 需要 |
@@ -623,8 +644,10 @@ if (!item || item.userId !== user.userId) {
 **POST /api/showcase** 请求体：
 
 ```json
-{ "outfitId": "clxxx", "caption": "今日穿搭" }
+{ "outfitId": "clxxx", "caption": "今日穿搭", "realPhotoPath": "/uploads/ootd/checkin-xxx.png" }
 ```
+
+`realPhotoPath` 可选，用于关联真实穿搭照片（OOTD 打卡发布时附带）。
 
 同一 outfitId 不允许重复发布（返回 409）。userId 由后端自动注入。
 
@@ -637,6 +660,36 @@ if (!item || item.userId !== user.userId) {
 复制源 Item 的所有属性字段（name/category/color/style/season 等），创建为当前用户的新 Item。不复制 imageHash/originalImagePath。
 
 > **试穿同款**：广场页的「试穿同款」直接调用 `/api/tryon`（与试穿页完全相同的链路），传入广场帖子关联的单品图片 + 用户人像，复用缓存机制。试穿完成后自动触发 AI 评分，结果弹窗支持收藏、下载、加衣橱。
+
+### OOTD 每日打卡
+
+| 方法 | 路径 | 说明 | 认证 |
+|------|------|------|------|
+| GET | `/api/ootd` | 按月查询打卡记录 | 需要 |
+| POST | `/api/ootd` | 创建打卡（上传真实照片 base64） | 需要 |
+| DELETE | `/api/ootd/[id]` | 删除打卡记录（含图片文件） | 需要 |
+
+**GET /api/ootd** 查询参数：
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| month | string | 月份，格式 `YYYY-MM`，默认当月 |
+
+返回当月打卡记录数组，包含关联的 outfit（id、resultImagePath、score）。
+
+**POST /api/ootd** 请求体：
+
+```json
+{
+  "image": "data:image/jpeg;base64,...",
+  "outfitId": "clxxx",
+  "caption": "今日穿搭"
+}
+```
+
+`image` 必填（base64 Data URL）。`outfitId` 和 `caption` 可选。图片保存到 `public/uploads/ootd/`。
+
+**DELETE /api/ootd/[id]**：需验证所有权，同时删除磁盘上的图片文件。
 
 ---
 

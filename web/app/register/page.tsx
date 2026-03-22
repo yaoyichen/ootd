@@ -65,7 +65,7 @@ export default function RegisterPage() {
             OOTD
           </h1>
           <p className="text-[11px] tracking-[0.2em] uppercase text-white/25 font-light">
-            AI Powered Styling
+            Dress to Impress
           </p>
         </div>
 
