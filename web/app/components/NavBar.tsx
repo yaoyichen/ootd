@@ -83,7 +83,7 @@ export function NavBar() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50"
+      className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
       style={{
         background: "rgba(12,12,14,0.85)",
         backdropFilter: "blur(24px) saturate(1.4)",

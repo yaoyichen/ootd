@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { NavBar } from "./components/NavBar";
+import { TopNav } from "./components/TopNav";
 import { ToastProvider } from "./components/ToastProvider";
 import { AuthProvider } from "./components/AuthProvider";
 
@@ -26,9 +27,10 @@ export default function RootLayout({
     <html lang="zh" className={plusJakarta.variable}>
       <body className="antialiased" style={{ fontFamily: "var(--font-plus-jakarta), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
         <AuthProvider>
+          <TopNav />
           <NavBar />
           <ToastProvider>
-            <div className="pb-20">{children}</div>
+            <div className="pb-20 md:pb-0 md:pt-16">{children}</div>
           </ToastProvider>
         </AuthProvider>
       </body>
